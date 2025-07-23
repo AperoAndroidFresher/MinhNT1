@@ -21,8 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +45,7 @@ import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -72,7 +76,9 @@ var user: User = User()
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
-
+    var editable by remember { mutableStateOf(false) }
+    var editButtonClickable by remember { mutableStateOf(true) }
+    var revealSubmit by remember { mutableStateOf(false) }
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(4.dp)) {
         Row(modifier = Modifier.height(20.dp)) {}
         Row(
@@ -95,11 +101,17 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     .height(100.dp)
                     .weight(0.1f)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.edit),
-                    contentDescription = "Edit",
-                    modifier = Modifier.padding(top = Dp(20f))
-                )
+                IconButton(onClick = {
+                    editButtonClickable = false
+                    editable = true
+                    revealSubmit = true
+                }, enabled = editButtonClickable) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.edit),
+                        contentDescription = "Edit",
+                        modifier = Modifier.padding(top = Dp(10f))
+                    )
+                }
             }
         }
 
@@ -149,7 +161,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                         //nameCheck = validateInput(name, "NAME")
                     },
                     failedCheck = nameCheck,
-                    placeholder = "Your name here..."
+                    placeholder = "Your name here...",
+                    enabled = editable
                 )
             }
             Box(
@@ -167,7 +180,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                         //phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
                     },
                     failedCheck = phoneNumberCheck,
-                    placeholder = "Your phone number..."
+                    placeholder = "Your phone number...",
+                    enabled = editable,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
         }
@@ -186,7 +201,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     //universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
                 },
                 failedCheck = universityNameCheck,
-                placeholder = "Your university name..."
+                placeholder = "Your university name...",
+                enabled = editable
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -204,14 +220,15 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 onValueChange = {
                     selfDescription = it
                 },
-                placeholder = "Enter a description about yourself..."
+                placeholder = "Enter a description about yourself...",
+                enabled = editable
             )
         }
         Spacer(Modifier.height(20.dp))
         var showAlert = remember { mutableStateOf(false) }
         if (showAlert.value) {
 
-
+            // Success dialog design
             Dialog(onDismissRequest = { showAlert.value = false }) {
 
                 Card(
@@ -259,8 +276,10 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             }
 
         }
+        if (revealSubmit)
         Button(
             onClick = {
+                // validate user input
                 nameCheck = validateInput(name, "NAME")
                 phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
                 universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
@@ -273,10 +292,18 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 //                        targetUser.universityName = universityName
 //                        targetUser.selfDescription = selfDescription
 //                    }
+                    // set user properties
                     user.name = name
                     user.phoneNumber = phoneNumber
                     user.universityName = universityName
                     user.selfDescription = selfDescription
+
+                    // modify interactable objects' states
+                    editable = false
+                    editButtonClickable = true
+                    revealSubmit = false
+
+                    // show success dialog
                     showAlert.value = true
                     Executors.newSingleThreadScheduledExecutor().schedule({
                         showAlert.value = false
@@ -287,6 +314,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 .height(50.dp)
                 .width(140.dp),
             shape = RoundedCornerShape(30)
+
         ) {
             Text(text = "Submit")
         }
@@ -304,7 +332,9 @@ fun TextFieldComponent(
     cornerMod: Int = 30,
     onValueChange: (String) -> Unit,
     singleLine: Boolean = true,
-    failedCheck: Boolean = false
+    failedCheck: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    enabled: Boolean = false
 ) {
     Column {
         Text(text = text.uppercase(), fontSize = 12.sp)
@@ -317,6 +347,8 @@ fun TextFieldComponent(
                 onValueChange = onValueChange,
                 shape = RoundedCornerShape(cornerMod),
                 textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                enabled = enabled,
+                keyboardOptions = keyboardOptions,
                 supportingText = {
                     if (failedCheck) {
                         Text(
