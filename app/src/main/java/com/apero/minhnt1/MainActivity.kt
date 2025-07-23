@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -74,11 +76,13 @@ class MainActivity : ComponentActivity() {
 
 var user: User = User()
 
+
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     var editable by remember { mutableStateOf(false) }
     var editButtonClickable by remember { mutableStateOf(true) }
     var revealSubmit by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(4.dp)) {
         Row(modifier = Modifier.height(20.dp)) {}
         Row(
@@ -162,7 +166,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     },
                     failedCheck = nameCheck,
                     placeholder = "Your name here...",
-                    enabled = editable
+                    enabled = editable,
+                    keyboardController = KeyboardActions(
+                        onDone = {keyboardController?.hide()})
                 )
             }
             Box(
@@ -182,7 +188,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     failedCheck = phoneNumberCheck,
                     placeholder = "Your phone number...",
                     enabled = editable,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardController = KeyboardActions(
+                        onDone = {keyboardController?.hide()})
                 )
             }
         }
@@ -202,7 +210,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 },
                 failedCheck = universityNameCheck,
                 placeholder = "Your university name...",
-                enabled = editable
+                enabled = editable,
+                keyboardController = KeyboardActions(
+                    onDone = {keyboardController?.hide()})
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -221,7 +231,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     selfDescription = it
                 },
                 placeholder = "Enter a description about yourself...",
-                enabled = editable
+                enabled = editable,
+                keyboardController = KeyboardActions(
+                    onDone = {keyboardController?.hide()})
             )
         }
         Spacer(Modifier.height(20.dp))
@@ -277,47 +289,47 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
         }
         if (revealSubmit)
-        Button(
-            onClick = {
-                // validate user input
-                nameCheck = validateInput(name, "NAME")
-                phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
-                universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
-                if (nameCheck == false && phoneNumberCheck == false && universityNameCheck == false) {
-                    // To be used if a list of Users is needed and
-                    // a certain value (i.e. phoneNumber) should be unique
+            Button(
+                onClick = {
+                    // validate user input
+                    nameCheck = validateInput(name, "NAME")
+                    phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
+                    universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
+                    if (nameCheck == false && phoneNumberCheck == false && universityNameCheck == false) {
+                        // To be used if a list of Users is needed and
+                        // a certain value (i.e. phoneNumber) should be unique
 //                    if (users.any { it.phoneNumber == phoneNumber }) {
 //                        var targetUser = users.first { it.phoneNumber == phoneNumber }
 //                        targetUser.name = name
 //                        targetUser.universityName = universityName
 //                        targetUser.selfDescription = selfDescription
 //                    }
-                    // set user properties
-                    user.name = name
-                    user.phoneNumber = phoneNumber
-                    user.universityName = universityName
-                    user.selfDescription = selfDescription
+                        // set user properties
+                        user.name = name
+                        user.phoneNumber = phoneNumber
+                        user.universityName = universityName
+                        user.selfDescription = selfDescription
 
-                    // modify interactable objects' states
-                    editable = false
-                    editButtonClickable = true
-                    revealSubmit = false
+                        // modify interactable objects' states
+                        editable = false
+                        editButtonClickable = true
+                        revealSubmit = false
 
-                    // show success dialog
-                    showAlert.value = true
-                    Executors.newSingleThreadScheduledExecutor().schedule({
-                        showAlert.value = false
-                    }, 2, TimeUnit.SECONDS)
-                }
-            },
-            modifier = Modifier
-                .height(50.dp)
-                .width(140.dp),
-            shape = RoundedCornerShape(30)
+                        // show success dialog
+                        showAlert.value = true
+                        Executors.newSingleThreadScheduledExecutor().schedule({
+                            showAlert.value = false
+                        }, 2, TimeUnit.SECONDS)
+                    }
+                },
+                modifier = Modifier
+                    .height(50.dp)
+                    .width(140.dp),
+                shape = RoundedCornerShape(30)
 
-        ) {
-            Text(text = "Submit")
-        }
+            ) {
+                Text(text = "Submit")
+            }
     }
 
 }
@@ -334,7 +346,8 @@ fun TextFieldComponent(
     singleLine: Boolean = true,
     failedCheck: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    enabled: Boolean = false
+    enabled: Boolean = false,
+    keyboardController: KeyboardActions
 ) {
     Column {
         Text(text = text.uppercase(), fontSize = 12.sp)
@@ -349,6 +362,7 @@ fun TextFieldComponent(
                 textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
                 enabled = enabled,
                 keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardController,
                 supportingText = {
                     if (failedCheck) {
                         Text(
