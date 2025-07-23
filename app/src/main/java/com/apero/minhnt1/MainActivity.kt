@@ -297,9 +297,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 //@Preview(showBackground = true)
 fun TextFieldComponent(
+    modifier: Modifier = Modifier,
     text: String = "Sample",
     placeholder: String,
-    modifier: Modifier = Modifier,
     description: String = "Sample",
     cornerMod: Int = 30,
     onValueChange: (String) -> Unit,
@@ -356,9 +356,9 @@ data class User(
 )
 
 //@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MinhNT1Theme {
-        Greeting("Android")
-    }
-}
+//@Composable
+//fun GreetingPreview() {
+//    MinhNT1Theme {
+//        Greeting("Android")
+//    }
+//}
