@@ -4,11 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,14 +42,14 @@ import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.apero.minhnt1.ui.theme.MinhNT1Theme
-import kotlin.concurrent.timer
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,8 +68,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+var user: User = User()
+
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
+
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(4.dp)) {
         Row(modifier = Modifier.height(20.dp)) {}
         Row(
@@ -95,7 +95,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     .height(100.dp)
                     .weight(0.1f)
             ) {
-
                 Image(
                     painter = painterResource(id = R.drawable.edit),
                     contentDescription = "Edit",
@@ -118,6 +117,18 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
         )
         Spacer(Modifier.height(20.dp))
+        var name by rememberSaveable { mutableStateOf("") }
+        var nameCheck by remember { mutableStateOf(false) }
+
+        var phoneNumber by rememberSaveable { mutableStateOf("") }
+        var phoneNumberCheck by remember { mutableStateOf(false) }
+
+        var universityName by rememberSaveable { mutableStateOf("") }
+        var universityNameCheck by remember { mutableStateOf(false) }
+
+        var selfDescription by rememberSaveable { mutableStateOf("") }
+
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -132,7 +143,13 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             ) {
                 TextFieldComponent(
                     text = "NAME",
-                    description = "Your name here..."
+                    description = name,
+                    onValueChange = {
+                        name = it
+                        //nameCheck = validateInput(name, "NAME")
+                    },
+                    failedCheck = nameCheck,
+                    placeholder = "Your name here..."
                 )
             }
             Box(
@@ -144,7 +161,13 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             ) {
                 TextFieldComponent(
                     text = "PHONE NUMBER",
-                    description = "Your phone number..."
+                    description = phoneNumber,
+                    onValueChange = {
+                        phoneNumber = it
+                        //phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
+                    },
+                    failedCheck = phoneNumberCheck,
+                    placeholder = "Your phone number..."
                 )
             }
         }
@@ -157,7 +180,13 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         ) {
             TextFieldComponent(
                 text = "UNIVERSITY NAME",
-                description = "Your university number..."
+                description = universityName,
+                onValueChange = {
+                    universityName = it
+                    //universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
+                },
+                failedCheck = universityNameCheck,
+                placeholder = "Your university name..."
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -169,67 +198,89 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         ) {
             TextFieldComponent(
                 text = "DESCRIBE YOURSELF",
-                description = "Enter a description about yourself...",
+                description = selfDescription,
                 cornerMod = 15,
-                singleLine = false
+                singleLine = false,
+                onValueChange = {
+                    selfDescription = it
+                },
+                placeholder = "Enter a description about yourself..."
             )
         }
         Spacer(Modifier.height(20.dp))
         var showAlert = remember { mutableStateOf(false) }
         if (showAlert.value) {
 
-                AnimatedVisibility(visible = showAlert.value, enter = fadeIn(), exit = fadeOut()) {
-                    Dialog(onDismissRequest = { showAlert.value = false }) {
 
-                        Card(
+            Dialog(onDismissRequest = { showAlert.value = false }) {
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 20.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.success_icon),
+                            contentDescription = "Starry night",
+                            contentScale = ContentScale.Crop,
+                            alignment = Alignment.CenterStart,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
-                                .padding(16.dp)
-                                ,
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 20.dp)) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.success_icon),
-                                    contentDescription = "Starry night",
-                                    contentScale = ContentScale.Crop,
-                                    alignment = Alignment.CenterStart,
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .clip(CircleShape).animateEnterExit(
-                                            // Slide in/out the inner box.
-                                            enter = slideInVertically(),
-                                            exit = slideOutVertically())
-                                )
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Text(
-                                    text = "Success!",
-                                    modifier = Modifier
-                                        .wrapContentSize(Alignment.Center),
-                                    textAlign = TextAlign.Center,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 32.sp,
-                                    color = Color(0xff2BB673)
-                                )
-                                Text(
-                                    text = "Your information has been updated!",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .wrapContentSize(Alignment.Center),
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 20.sp
-                                )
-                            }
-                        }
+
+                                .size(100.dp)
+                                .clip(CircleShape)
+
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            text = "Success!",
+                            modifier = Modifier
+                                .wrapContentSize(Alignment.Center),
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp,
+                            color = Color(0xff2BB673)
+                        )
+                        Text(
+                            text = "Your information has been updated!",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .wrapContentSize(Alignment.Center),
+                            textAlign = TextAlign.Center,
+                            fontSize = 20.sp
+                        )
+                    }
                 }
             }
+
         }
         Button(
             onClick = {
-                showAlert.value = true
-                timer(initialDelay = 2000L, period = 1L) {
-                    showAlert.value = false
+                nameCheck = validateInput(name, "NAME")
+                phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
+                universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
+                if (nameCheck == false && phoneNumberCheck == false && universityNameCheck == false) {
+                    // To be used if a list of Users is needed and
+                    // a certain value (i.e. phoneNumber) should be unique
+//                    if (users.any { it.phoneNumber == phoneNumber }) {
+//                        var targetUser = users.first { it.phoneNumber == phoneNumber }
+//                        targetUser.name = name
+//                        targetUser.universityName = universityName
+//                        targetUser.selfDescription = selfDescription
+//                    }
+                    user.name = name
+                    user.phoneNumber = phoneNumber
+                    user.universityName = universityName
+                    user.selfDescription = selfDescription
+                    showAlert.value = true
+                    Executors.newSingleThreadScheduledExecutor().schedule({
+                        showAlert.value = false
+                    }, 2, TimeUnit.SECONDS)
                 }
             },
             modifier = Modifier
@@ -246,30 +297,35 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 //@Preview(showBackground = true)
 fun TextFieldComponent(
-
-    text: String = "Sample",
     modifier: Modifier = Modifier,
+    text: String = "Sample",
+    placeholder: String,
     description: String = "Sample",
     cornerMod: Int = 30,
-
-    singleLine: Boolean = true
+    onValueChange: (String) -> Unit,
+    singleLine: Boolean = true,
+    failedCheck: Boolean = false
 ) {
     Column {
         Text(text = text.uppercase(), fontSize = 12.sp)
         Spacer(modifier = modifier.height(Dp(8f)))
         Row {
-            var textFieldValue by remember() {
-                mutableStateOf(TextFieldValue(description ))
-            }
-
             OutlinedTextField(
-                value = textFieldValue,
+                value = description,
+                placeholder = { Text(placeholder, fontSize = 12.sp) },
                 singleLine = singleLine,
-                onValueChange = { newText ->
-                    textFieldValue = newText
-                },
+                onValueChange = onValueChange,
                 shape = RoundedCornerShape(cornerMod),
                 textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                supportingText = {
+                    if (failedCheck) {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = "Invalid input",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
                 modifier = modifier
                     .fillMaxSize()
                     .heightIn(1.dp)
@@ -279,11 +335,30 @@ fun TextFieldComponent(
     }
 }
 
+fun validateInput(text: String, source: String): Boolean {
+    when (source) {
+        "PHONE NUMBER" -> {
+            return if (text.matches(Regex("^[0-9\\s]*$"))) false else true
+        }
+
+        "NAME", "UNIVERSITY NAME" -> {
+            return if (text.matches(Regex("^[A-z\\s]*$"))) false else true
+        }
+    }
+    return false
+}
+
+data class User(
+    var name: String = "",
+    var phoneNumber: String = "",
+    var universityName: String = "",
+    var selfDescription: String = ""
+)
 
 //@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MinhNT1Theme {
-        Greeting("Android")
-    }
-}
+//@Composable
+//fun GreetingPreview() {
+//    MinhNT1Theme {
+//        Greeting("Android")
+//    }
+//}
