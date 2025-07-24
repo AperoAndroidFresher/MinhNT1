@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,21 +21,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,6 +61,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,19 +76,389 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MinhNT1Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MusicGallery(modifier = Modifier)
             }
         }
     }
 }
 
+
 var user: User = User()
 
+@Composable
+//@Preview(showBackground = true)
+fun SongEntry(
+    cover: Int = R.drawable.cover_1,
+    title: String = "Sample",
+    author: String = "Sample",
+    length: String = "00:00"
+) {
+    Row(
+        modifier = Modifier
+            .background(Black)
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = cover),
+            contentDescription = "Song cover",
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.CenterStart,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(10))
+        )
+        Column(modifier = Modifier.weight(0.7f), verticalArrangement = Arrangement.Center) {
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                author,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray
+            )
+        }
+        Text(
+            length,
+            modifier = Modifier.weight(0.15f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White,
+            textAlign = TextAlign.End
+        )
+        IconButton(onClick = {
+
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = R.drawable.vertical_dots),
+                contentDescription = "Grid",
+                modifier = Modifier.weight(0.05f),
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+@Preview(showBackground = false)
+fun SongEntryVertical(
+    cover: Int = R.drawable.cover_1,
+    title: String = "Sample",
+    author: String = "Sample",
+    length: String = "00:00"
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
+        Image(
+            painter = painterResource(id = cover),
+            contentDescription = "Song cover",
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.CenterStart,
+            modifier = Modifier
+                .size(200.dp)
+                .clip(RoundedCornerShape(10))
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            author,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(length, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+//@Preview(showBackground = true)
+fun MusicGallery(modifier: Modifier = Modifier) {
+    var playlist = remember { mutableStateListOf<Song>() }
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "GOODNIGHT",
+            author = "STOMACH BOOK",
+            length = "03:17"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Boys For Pele",
+            author = "Tori Amos",
+            length = "04:26"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "metallic life review",
+            author = "matmos",
+            length = "02:59"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "More",
+            author = "Pulp",
+            length = "03:32"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "STATIC CHAOS",
+            author = "STOMACH BOOK",
+            length = "02:46"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Return to Form",
+            author = "Tori Amos",
+            length = "03:20"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "illusion",
+            author = "matmos",
+            length = "04:01"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "Endurance",
+            author = "Pulp",
+            length = "02:59"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "RADIANCE",
+            author = "STOMACH BOOK",
+            length = "03:50"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Compassionate",
+            author = "Tori Amos",
+            length = "02:39"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "foggy morning",
+            author = "matmos",
+            length = "04:01"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "Mission",
+            author = "Pulp",
+            length = "02:59"
+        )
+    )
+    var isList by remember { mutableStateOf(true) }
+    var lazyListState = rememberLazyListState()
+    var lazyGridState = rememberLazyGridState()
+
+    var dropdownItems = remember { mutableStateListOf<DropdownItems>() }
+    dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
+    dropdownItems.add(DropdownItems("Share (coming soon)", R.drawable.share))
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .background(Black)
+            .padding(top = 24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "My Playlist",
+            modifier = Modifier
+                .weight(0.8f)
+                .padding(start = 96.dp),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        IconButton(onClick = {
+            isList = !isList
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = if (isList) R.drawable.grid else R.drawable.hamburger_icon),
+                contentDescription = "Grid",
+                modifier = Modifier.weight(0.1f),
+                tint = Color.White
+            )
+        }
+        IconButton(onClick = {
+
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = R.drawable.sort_descending),
+                contentDescription = "Sort",
+                modifier = Modifier.weight(0.1f),
+                tint = Color.White
+            )
+        }
+    }
+    if (isList) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 80.dp)
+                .background(Color.Black),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            state = lazyListState
+        ) {
+            itemsIndexed(playlist) { index, item ->
+//                SongEntry(
+//                    cover = playlist[index].cover,
+//                    title = playlist[index].title,
+//                    author = playlist[index].author,
+//                    length = playlist[index].length
+//                )
+                var isDropdownMenuVisible by remember { mutableStateOf(false) }
+                Row(
+                    modifier = Modifier
+                        .background(Black)
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = item.cover),
+                        contentDescription = "Song cover",
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.CenterStart,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(10))
+                    )
+                    Column(
+                        modifier = Modifier.weight(0.7f),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            item.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            item.author,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        )
+                    }
+                    Text(
+                        item.length,
+                        modifier = Modifier.weight(0.15f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        textAlign = TextAlign.End
+                    )
+
+                    Box {
+                        IconButton(onClick = {
+                            isDropdownMenuVisible = true
+                            //playlist.removeAt(index)
+                        }, enabled = true) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.vertical_dots),
+                                contentDescription = "Grid",
+                                tint = Color.White
+                            )
+                            DropdownMenu(
+                                expanded = isDropdownMenuVisible,
+                                onDismissRequest = { isDropdownMenuVisible = false },
+                                modifier = Modifier.background(Color.Black)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(dropdownItems[0].text, color = Color.White) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(id = dropdownItems[0].icon),
+                                            contentDescription = "Remove",
+                                            tint = Color.White
+                                        )
+                                    },
+                                    onClick = {
+                                        playlist.removeAt(index)
+                                        isDropdownMenuVisible = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(dropdownItems[1].text, color = Color.Gray) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(id = dropdownItems[1].icon),
+                                            contentDescription = "Share",
+                                            tint = Color.White
+                                        )
+                                    },
+                                    onClick = {
+                                        isDropdownMenuVisible = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        LazyVerticalGrid(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 80.dp)
+                .background(Color.Black),
+            columns = GridCells.Fixed(2),
+            state = lazyGridState,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(playlist.size) { index ->
+                SongEntryVertical(
+                    cover = playlist[index].cover,
+                    title = playlist[index].title,
+                    author = playlist[index].author,
+                    length = playlist[index].length
+                )
+            }
+        }
+    }
+}
+
+data class Song(val cover: Int, val title: String, val author: String, val length: String)
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
@@ -168,7 +551,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     placeholder = "Your name here...",
                     enabled = editable,
                     keyboardController = KeyboardActions(
-                        onDone = {keyboardController?.hide()})
+                        onDone = { keyboardController?.hide() })
                 )
             }
             Box(
@@ -190,7 +573,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     enabled = editable,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     keyboardController = KeyboardActions(
-                        onDone = {keyboardController?.hide()})
+                        onDone = { keyboardController?.hide() })
                 )
             }
         }
@@ -212,7 +595,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 placeholder = "Your university name...",
                 enabled = editable,
                 keyboardController = KeyboardActions(
-                    onDone = {keyboardController?.hide()})
+                    onDone = { keyboardController?.hide() })
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -233,7 +616,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 placeholder = "Enter a description about yourself...",
                 enabled = editable,
                 keyboardController = KeyboardActions(
-                    onDone = {keyboardController?.hide()})
+                    onDone = { keyboardController?.hide() })
             )
         }
         Spacer(Modifier.height(20.dp))
@@ -393,6 +776,14 @@ fun validateInput(text: String, source: String): Boolean {
     }
     return false
 }
+
+fun switchIcons(isGrid: Boolean): Int {
+    if (isGrid) {
+        return R.drawable.grid
+    } else return R.drawable.hamburger_icon
+}
+
+data class DropdownItems(val text: String, val icon: Int)
 
 data class User(
     var name: String = "",
