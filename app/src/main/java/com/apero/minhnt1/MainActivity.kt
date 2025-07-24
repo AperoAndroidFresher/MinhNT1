@@ -22,9 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -153,15 +151,26 @@ fun SongEntryVertical(
     length: String = "00:00"
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
-        Image(
-            painter = painterResource(id = cover),
-            contentDescription = "Song cover",
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.CenterStart,
-            modifier = Modifier
-                .size(200.dp)
-                .clip(RoundedCornerShape(10))
-        )
+        Box(modifier = Modifier.size(200.dp).clip(RoundedCornerShape(10))) {
+            Image(
+                painter = painterResource(id = cover),
+                contentDescription = "Song cover",
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.CenterStart,
+                modifier = Modifier.fillMaxSize()
+            )
+            IconButton(onClick = {
+
+            }, enabled = true) {
+                Icon(
+                    painter = painterResource(R.drawable.vertical_dots),
+                    contentDescription = "Grid",
+                    modifier = Modifier.align(Alignment.TopEnd).size(60.dp)
+                        ,
+                    tint = Color.White
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             title,
@@ -186,6 +195,7 @@ fun SongEntryVertical(
 @Composable
 //@Preview(showBackground = true)
 fun MusicGallery(modifier: Modifier = Modifier) {
+
     var playlist = remember { mutableStateListOf<Song>() }
     playlist.add(
         Song(
@@ -345,7 +355,7 @@ fun MusicGallery(modifier: Modifier = Modifier) {
 //                    author = playlist[index].author,
 //                    length = playlist[index].length
 //                )
-                var isDropdownMenuVisible by remember { mutableStateOf(false) }
+
                 Row(
                     modifier = Modifier
                         .background(Black)
@@ -387,7 +397,7 @@ fun MusicGallery(modifier: Modifier = Modifier) {
                         color = Color.White,
                         textAlign = TextAlign.End
                     )
-
+                    var isDropdownMenuVisible by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = {
                             isDropdownMenuVisible = true
@@ -446,13 +456,91 @@ fun MusicGallery(modifier: Modifier = Modifier) {
             state = lazyGridState,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(playlist.size) { index ->
-                SongEntryVertical(
-                    cover = playlist[index].cover,
-                    title = playlist[index].title,
-                    author = playlist[index].author,
-                    length = playlist[index].length
-                )
+            items(playlist.size) { index->
+//                SongEntryVertical(
+//                    cover = playlist[index].cover,
+//                    title = playlist[index].title,
+//                    author = playlist[index].author,
+//                    length = playlist[index].length
+//                )
+                var isDropdownMenuVisible by remember { mutableStateOf(false) }
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
+                    Box(modifier = Modifier.size(200.dp).clip(RoundedCornerShape(10))) {
+                        Image(
+                            painter = painterResource(id = playlist[index].cover),
+                            contentDescription = "Song cover",
+                            contentScale = ContentScale.Crop,
+                            alignment = Alignment.CenterStart,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        IconButton(onClick = {
+
+                        }, enabled = true) {
+                            Box {
+                                IconButton(onClick = {
+                                    isDropdownMenuVisible = true
+                                    //playlist.removeAt(index)
+                                }, enabled = true) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.vertical_dots),
+                                        contentDescription = "Grid",
+                                        tint = Color.White
+                                    )
+                                    DropdownMenu(
+                                        expanded = isDropdownMenuVisible,
+                                        onDismissRequest = { isDropdownMenuVisible = false },
+                                        modifier = Modifier.background(Color.Black)
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text(dropdownItems[0].text, color = Color.White) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter = painterResource(id = dropdownItems[0].icon),
+                                                    contentDescription = "Remove",
+                                                    tint = Color.White
+                                                )
+                                            },
+                                            onClick = {
+                                                playlist.removeAt(index)
+                                                isDropdownMenuVisible = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(dropdownItems[1].text, color = Color.Gray) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter = painterResource(id = dropdownItems[1].icon),
+                                                    contentDescription = "Share",
+                                                    tint = Color.White
+                                                )
+                                            },
+                                            onClick = {
+                                                isDropdownMenuVisible = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        playlist[index].title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        playlist[index].author,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(playlist[index].length, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+
+                }
             }
         }
     }
