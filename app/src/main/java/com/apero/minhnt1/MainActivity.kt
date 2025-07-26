@@ -1,7 +1,6 @@
 package com.apero.minhnt1
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -63,7 +61,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -82,7 +79,6 @@ import androidx.lifecycle.lifecycleScope
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -1084,21 +1080,7 @@ fun LoginScreen() {
                 placeholder = { Text("Username") },
                 singleLine = true,
                 supportingText = {
-                    if (usernameCheck) ErrorMessage(
-                        failedCheck = usernameCheck,
-                        text = "Invalid format"
-                    ) else if (!successfulLogin) {
-                        ErrorMessage(
-                            failedCheck = successfulLogin,
-                            text = "Wrong username and/or password"
-                        )
-                    } else {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = "Welcome $username",
-                            color = Color.White
-                        )
-                    }
+                    ErrorMessage(failedCheck = usernameCheck, text = "Invalid format")
                 }
             )
             Spacer(modifier = Modifier.height(10.dp))
