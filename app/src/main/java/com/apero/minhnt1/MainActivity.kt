@@ -4,8 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,21 +22,35 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,34 +65,535 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.apero.minhnt1.ui.theme.MinhNT1Theme
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.text.isDigitsOnly
+import androidx.lifecycle.lifecycleScope
+import com.apero.minhnt1.ui.theme.AppTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashscreen = installSplashScreen()
+        var keepSplashScreen = true
         super.onCreate(savedInstanceState)
+        splashscreen.setKeepOnScreenCondition { keepSplashScreen }
+        lifecycleScope.launch {
+            delay(3000)
+            keepSplashScreen = false
+        }
         enableEdgeToEdge()
         setContent {
-            MinhNT1Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+            AppTheme {
+                LoginScreen()
+            }
+        }
+    }
+}
+
+
+var user: User = User()
+
+@Composable
+//@Preview(showBackground = true)
+fun SongEntry(
+    cover: Int = R.drawable.cover_1,
+    title: String = "Sample",
+    author: String = "Sample",
+    length: String = "00:00"
+) {
+    Row(
+        modifier = Modifier
+            .background(Black)
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = cover),
+            contentDescription = "Song cover",
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.CenterStart,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(10))
+        )
+        Column(modifier = Modifier.weight(0.7f), verticalArrangement = Arrangement.Center) {
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                author,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray
+            )
+        }
+        Text(
+            length,
+            modifier = Modifier.weight(0.15f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White,
+            textAlign = TextAlign.End
+        )
+        IconButton(onClick = {
+
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = R.drawable.vertical_dots),
+                contentDescription = "Grid",
+                modifier = Modifier.weight(0.05f),
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+//@Preview(showBackground = false)
+fun SongEntryVertical(
+    cover: Int = R.drawable.cover_1,
+    title: String = "Sample",
+    author: String = "Sample",
+    length: String = "00:00"
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
+        Box(
+            modifier = Modifier
+                .size(200.dp)
+                .clip(RoundedCornerShape(10))
+        ) {
+            Image(
+                painter = painterResource(id = cover),
+                contentDescription = "Song cover",
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.CenterStart,
+                modifier = Modifier.fillMaxSize()
+            )
+            IconButton(onClick = {
+
+            }, enabled = true) {
+                Icon(
+                    painter = painterResource(R.drawable.vertical_dots),
+                    contentDescription = "Grid",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(60.dp),
+                    tint = Color.White
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            author,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(length, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+//@Preview(showBackground = true)
+fun MusicGallery(modifier: Modifier = Modifier) {
+
+    var playlist = remember { mutableStateListOf<Song>() }
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "GOODNIGHT",
+            author = "STOMACH BOOK",
+            length = "03:17"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Boys For Pele",
+            author = "Tori Amos",
+            length = "04:26"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "metallic life review",
+            author = "matmos",
+            length = "02:59"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "More",
+            author = "Pulp",
+            length = "03:32"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "STATIC CHAOS",
+            author = "STOMACH BOOK",
+            length = "02:46"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Return to Form",
+            author = "Tori Amos",
+            length = "03:20"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "illusion",
+            author = "matmos",
+            length = "04:01"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "Endurance",
+            author = "Pulp",
+            length = "02:59"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "RADIANCE",
+            author = "STOMACH BOOK",
+            length = "03:50"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Compassionate",
+            author = "Tori Amos",
+            length = "02:39"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "foggy morning",
+            author = "matmos",
+            length = "04:01"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "Mission",
+            author = "Pulp",
+            length = "02:59"
+        )
+    )
+    var isList by remember { mutableStateOf(true) }
+    var lazyListState = rememberLazyListState()
+    var lazyGridState = rememberLazyGridState()
+
+    var dropdownItems = remember { mutableStateListOf<DropdownItems>() }
+    dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
+    dropdownItems.add(DropdownItems("Share (coming soon)", R.drawable.share))
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .background(Black)
+            .padding(top = 24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "My Playlist",
+            modifier = Modifier
+                .weight(0.8f)
+                .padding(start = 96.dp),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        IconButton(onClick = {
+            isList = !isList
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = if (isList) R.drawable.grid else R.drawable.hamburger_icon),
+                contentDescription = "Grid",
+                modifier = Modifier.weight(0.1f),
+                tint = Color.White
+            )
+        }
+        IconButton(onClick = {
+
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = R.drawable.sort_descending),
+                contentDescription = "Sort",
+                modifier = Modifier.weight(0.1f),
+                tint = Color.White
+            )
+        }
+    }
+    if (isList) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 80.dp)
+                .background(Color.Black),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            state = lazyListState
+        ) {
+            itemsIndexed(playlist) { index, item ->
+//                SongEntry(
+//                    cover = playlist[index].cover,
+//                    title = playlist[index].title,
+//                    author = playlist[index].author,
+//                    length = playlist[index].length
+//                )
+
+                Row(
+                    modifier = Modifier
+                        .background(Black)
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = item.cover),
+                        contentDescription = "Song cover",
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.CenterStart,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(10))
                     )
+                    Column(
+                        modifier = Modifier.weight(0.7f),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            item.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            item.author,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        )
+                    }
+                    Text(
+                        item.length,
+                        modifier = Modifier.weight(0.15f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        textAlign = TextAlign.End
+                    )
+                    var isDropdownMenuVisible by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = {
+                            isDropdownMenuVisible = true
+                            //playlist.removeAt(index)
+                        }, enabled = true) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.vertical_dots),
+                                contentDescription = "Grid",
+                                tint = Color.White
+                            )
+                            DropdownMenu(
+                                expanded = isDropdownMenuVisible,
+                                onDismissRequest = { isDropdownMenuVisible = false },
+                                modifier = Modifier.background(Color.Black)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(dropdownItems[0].text, color = Color.White) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(id = dropdownItems[0].icon),
+                                            contentDescription = "Remove",
+                                            tint = Color.White
+                                        )
+                                    },
+                                    onClick = {
+                                        playlist.removeAt(index)
+                                        isDropdownMenuVisible = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(dropdownItems[1].text, color = Color.Gray) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(id = dropdownItems[1].icon),
+                                            contentDescription = "Share",
+                                            tint = Color.White
+                                        )
+                                    },
+                                    onClick = {
+                                        isDropdownMenuVisible = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        LazyVerticalGrid(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 80.dp)
+                .background(Color.Black),
+            columns = GridCells.Fixed(2),
+            state = lazyGridState,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(playlist.size) { index ->
+//                SongEntryVertical(
+//                    cover = playlist[index].cover,
+//                    title = playlist[index].title,
+//                    author = playlist[index].author,
+//                    length = playlist[index].length
+//                )
+                var isDropdownMenuVisible by remember { mutableStateOf(false) }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(200.dp)
+                            .clip(RoundedCornerShape(10))
+                    ) {
+                        Image(
+                            painter = painterResource(id = playlist[index].cover),
+                            contentDescription = "Song cover",
+                            contentScale = ContentScale.Crop,
+                            alignment = Alignment.CenterStart,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        IconButton(onClick = {
+
+                        }, enabled = true) {
+                            Box {
+                                IconButton(onClick = {
+                                    isDropdownMenuVisible = true
+                                    //playlist.removeAt(index)
+                                }, enabled = true) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.vertical_dots),
+                                        contentDescription = "Grid",
+                                        tint = Color.White
+                                    )
+                                    DropdownMenu(
+                                        expanded = isDropdownMenuVisible,
+                                        onDismissRequest = { isDropdownMenuVisible = false },
+                                        modifier = Modifier.background(Color.Black)
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    dropdownItems[0].text,
+                                                    color = Color.White
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter = painterResource(id = dropdownItems[0].icon),
+                                                    contentDescription = "Remove",
+                                                    tint = Color.White
+                                                )
+                                            },
+                                            onClick = {
+                                                playlist.removeAt(index)
+                                                isDropdownMenuVisible = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    dropdownItems[1].text,
+                                                    color = Color.Gray
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter = painterResource(id = dropdownItems[1].icon),
+                                                    contentDescription = "Share",
+                                                    tint = Color.White
+                                                )
+                                            },
+                                            onClick = {
+                                                isDropdownMenuVisible = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        playlist[index].title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        playlist[index].author,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        playlist[index].length,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
+
                 }
             }
         }
     }
 }
 
-var user: User = User()
-
+data class Song(val cover: Int, val title: String, val author: String, val length: String)
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
@@ -168,7 +686,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     placeholder = "Your name here...",
                     enabled = editable,
                     keyboardController = KeyboardActions(
-                        onDone = {keyboardController?.hide()})
+                        onDone = { keyboardController?.hide() })
                 )
             }
             Box(
@@ -190,7 +708,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     enabled = editable,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     keyboardController = KeyboardActions(
-                        onDone = {keyboardController?.hide()})
+                        onDone = { keyboardController?.hide() })
                 )
             }
         }
@@ -212,7 +730,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 placeholder = "Your university name...",
                 enabled = editable,
                 keyboardController = KeyboardActions(
-                    onDone = {keyboardController?.hide()})
+                    onDone = { keyboardController?.hide() })
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -233,7 +751,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 placeholder = "Enter a description about yourself...",
                 enabled = editable,
                 keyboardController = KeyboardActions(
-                    onDone = {keyboardController?.hide()})
+                    onDone = { keyboardController?.hide() })
             )
         }
         Spacer(Modifier.height(20.dp))
@@ -295,7 +813,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     nameCheck = validateInput(name, "NAME")
                     phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
                     universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
-                    if (nameCheck == false && phoneNumberCheck == false && universityNameCheck == false) {
+                    if (!nameCheck && !phoneNumberCheck && !universityNameCheck) {
                         // To be used if a list of Users is needed and
                         // a certain value (i.e. phoneNumber) should be unique
 //                    if (users.any { it.phoneNumber == phoneNumber }) {
@@ -381,24 +899,58 @@ fun TextFieldComponent(
     }
 }
 
+@Composable
+fun ErrorMessage(failedCheck: Boolean, text: String) {
+    if (failedCheck) {
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            text = text,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
 fun validateInput(text: String, source: String): Boolean {
     when (source) {
         "PHONE NUMBER" -> {
-            return if (text.matches(Regex("^[0-9\\s]*$"))) false else true
+            return if (text.isDigitsOnly()) false else true
         }
 
         "NAME", "UNIVERSITY NAME" -> {
             return if (text.matches(Regex("^[A-z\\s]*$"))) false else true
         }
+
+        "PASSWORD", "USERNAME" -> {
+            return if (text.matches(Regex("^[A-z0-9]*\$"))) false else true
+        }
+
+        "EMAIL" -> {
+            return if (text.matches(Regex("^[a-zA-Z0-9_!#\$%&’*+/=?`{|}~^.-]+@(apero.vn)"))) false else true
+        }
     }
     return false
 }
+
+fun switchIcons(isGrid: Boolean): Int {
+    if (isGrid) {
+        return R.drawable.grid
+    } else return R.drawable.hamburger_icon
+}
+
+
+data class DropdownItems(val text: String, val icon: Int)
 
 data class User(
     var name: String = "",
     var phoneNumber: String = "",
     var universityName: String = "",
     var selfDescription: String = ""
+)
+
+data class UserEntry(
+    var username: String = "",
+    var password: String = "",
+    var email: String = ""
 )
 
 //@Preview(showBackground = true)
@@ -408,3 +960,261 @@ data class User(
 //        Greeting("Android")
 //    }
 //}
+@Composable
+fun RememberCheckbox(
+    label: String,
+    onCheckChanged: () -> Unit,
+    isChecked: Boolean
+) {
+
+    Row(
+        modifier = Modifier
+            .clickable(
+                onClick = onCheckChanged
+            )
+            .padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(checked = isChecked, onCheckedChange = null)
+        Spacer(Modifier.size(6.dp))
+        Text(label, color = Color.White)
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun LoginScreen() {
+    var userEntries = remember { mutableStateListOf<UserEntry>()}
+    var successfulLogin by remember { mutableStateOf(false) }
+
+    var username by remember { mutableStateOf("") }
+    var usernameCheck by remember { mutableStateOf(false) }
+
+    var password by remember { mutableStateOf("") }
+    var passwordCheck by remember { mutableStateOf(false) }
+
+    var email by remember { mutableStateOf("") }
+    var emailCheck by remember { mutableStateOf(false) }
+
+    var confirmPassword by remember { mutableStateOf("") }
+    var confirmPasswordCheck by remember { mutableStateOf(false) }
+
+    var isPasswordVisible by remember { mutableStateOf(false) }
+    var isSignupScreen by remember { mutableStateOf(false) }
+    val usernameIcon = @Composable {
+        Icon(
+            Icons.Default.Person,
+            contentDescription = "Username",
+            tint = Color.DarkGray
+        )
+    }
+    val passwordIcon = @Composable {
+        Icon(
+            Icons.Default.Lock,
+            contentDescription = "Password",
+            tint = Color.DarkGray
+        )
+    }
+    val visibilityIcon = @Composable {
+        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+            Icon(
+                if (isPasswordVisible) painterResource(R.drawable.visibility) else painterResource(R.drawable.visibility_off),
+                contentDescription = "",
+                tint = Color.DarkGray
+            )
+        }
+    }
+    val emailIcon = @Composable {
+        Icon(
+            Icons.Default.Email,
+            contentDescription = "Email",
+            tint = Color.DarkGray
+        )
+    }
+    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(48.dp)) {
+            if (isSignupScreen) {
+                IconButton(onClick = {
+                    isSignupScreen = false
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back),
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.Black)
+                .padding(4.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.app_logo),
+                contentDescription = "App logo",
+                alignment = Alignment.Center,
+                contentScale = ContentScale.FillHeight,
+                modifier = Modifier
+                    .size(150.dp)
+
+            )
+
+            Text(
+                if (!isSignupScreen) "Login to your account" else "Sign Up",
+                color = Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            OutlinedTextField(
+                value = username,
+                onValueChange = {
+                    username = it
+                    if (password!= "") usernameCheck = true
+                },
+                leadingIcon = usernameIcon,
+                shape = RoundedCornerShape(25),
+                placeholder = { Text("Username") },
+                singleLine = true,
+                supportingText = {
+                    ErrorMessage(failedCheck = usernameCheck, text = "Invalid format")
+                }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    password = it
+                    if (password != "") passwordCheck = false
+                },
+                leadingIcon = passwordIcon,
+                shape = RoundedCornerShape(25),
+                placeholder = { Text("Password") },
+                singleLine = true,
+                trailingIcon = visibilityIcon,
+                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                supportingText = {
+                    ErrorMessage(
+                        failedCheck = passwordCheck,
+                        text = "Invalid format"
+                    )
+                }
+
+
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            if (!isSignupScreen) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RememberCheckbox("Remember me", {}, false)
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(onClick = {
+                    usernameCheck = validateInput(username, "USERNAME")
+                    passwordCheck = validateInput(password, "PASSWORD")
+                    if (!usernameCheck && !passwordCheck) {
+                        val foundUser =
+                            userEntries.filter { it.username == username && it.password == password }
+                        if (foundUser.isNotEmpty()) {
+                            successfulLogin = true
+                        } else {
+                            successfulLogin = false
+                        }
+                    }
+                }, modifier = Modifier.width(280.dp)) {
+                    Text("Log in")
+                }
+                Spacer(modifier = Modifier.height(200.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text("Don't have an account?", color = Color.White)
+                    TextButton(onClick = { isSignupScreen = true }) {
+                        Text("Sign Up")
+                    }
+                }
+            } else {
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = {
+                        confirmPassword = it
+                        if (confirmPassword!= "") confirmPasswordCheck = false
+
+                    },
+                    leadingIcon = passwordIcon,
+                    shape = RoundedCornerShape(25),
+                    placeholder = { Text("Confirm password") },
+                    singleLine = true,
+                    trailingIcon = visibilityIcon,
+                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    supportingText = {
+                        ErrorMessage(
+                            failedCheck = passwordCheck,
+                            text = "Invalid format"
+                        )
+                    }
+
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        if (email!= "") emailCheck = false
+                    },
+                    leadingIcon = emailIcon,
+                    shape = RoundedCornerShape(25),
+                    placeholder = { Text("Email") },
+                    singleLine = true,
+                    supportingText = {
+                        ErrorMessage(
+                            failedCheck = passwordCheck,
+                            text = "Invalid format"
+                        )
+                    }
+
+                )
+
+                Spacer(modifier = Modifier.height(128.dp))
+                Button(onClick = {
+                    usernameCheck = validateInput(username, "USERNAME")
+                    passwordCheck = validateInput(password, "PASSWORD")
+                    confirmPasswordCheck =
+                        validateInput(confirmPassword, "PASSWORD") && !(password == confirmPassword)
+                    emailCheck = validateInput(email, "EMAIL")
+                    if (!usernameCheck && !passwordCheck && !confirmPasswordCheck && !emailCheck) {
+                        userEntries.add(UserEntry(username, password, email))
+                        isSignupScreen = false
+                        username = ""
+                        password = ""
+                    } else {
+                        if (usernameCheck) {
+                            username = ""
+                        }
+                        if (passwordCheck || confirmPasswordCheck) {
+                            password = ""
+                            confirmPassword = ""
+                        }
+                        if (emailCheck) {
+                            email = ""
+                        }
+                    }
+                }, modifier = Modifier.width(280.dp)) {
+                    Text("Sign Up")
+                }
+            }
+
+        }
+    }
+}
