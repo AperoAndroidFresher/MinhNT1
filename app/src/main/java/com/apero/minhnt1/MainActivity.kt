@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,16 +47,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,7 +75,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,15 +82,20 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation3.runtime.entry
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.nio.file.WatchEvent
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
+
         var keepSplashScreen = true
         super.onCreate(savedInstanceState)
         splashscreen.setKeepOnScreenCondition { keepSplashScreen }
@@ -94,15 +105,123 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent {
+            val backStack = remember { mutableStateListOf<Screen>(Login) }
+            var successfulLogin = remember { mutableStateOf(false) }
             AppTheme {
-                LoginScreen()
+                Scaffold(
+                    bottomBar = {
+                        if (successfulLogin.value) {
+                            NavigationBar {
+                                var currSelection: Screen = Home
+                                destinations.forEach { destination ->
+
+                                    var isSelected = destination == currSelection
+                                    NavigationBarItem(
+                                        selected = isSelected,
+                                        onClick = {
+                                            backStack.clear()
+                                            backStack.add(destination)
+                                            currSelection = destination
+                                        },
+                                        label = {
+                                            Text(destination.name)
+                                        },
+                                        icon = {
+                                            Icon(
+                                                painterResource(destination.icon),
+                                                contentDescription = destination.name
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                ) { _ ->
+                    NavDisplay(
+                        backStack = backStack,
+                        onBack = { backStack.removeLastOrNull() },
+                        entryProvider = entryProvider {
+                            entry<Login> {
+                                LoginScreen(backStack = backStack, success = successfulLogin)
+                            }
+                            entry<Home> {
+                                HomeScreen(backStack)
+                            }
+                            entry<Information> {
+                                Greeting(backStack)
+                            }
+                            entry<Library> {
+                                LibraryScreen(backStack)
+                            }
+                            entry<Playlist> {
+                                MusicGallery(backStack)
+                            }
+                        }
+                    )
+                }
             }
         }
     }
 }
 
+//enum class Screen {
+//    LOGIN, SIGNUP, HOME, PLAYLIST, INFORMATION, LIBRARY
+//}
 
+sealed interface Screen {
+    open val name: String
+    open val icon: Int
+}
+
+data object Login : Screen {
+    override val name = "Login"
+    override val icon = 0
+}
+
+data object Home : Screen {
+    override val name = "Home"
+    override val icon = R.drawable.home
+}
+
+data object Information : Screen {
+    override val name = "Information"
+    override val icon = 0
+}
+
+data object Playlist : Screen {
+    override val name = "Playlist"
+    override val icon = R.drawable.playlist
+}
+
+data object Library : Screen {
+    override val name = "Library"
+    override val icon = R.drawable.music
+}
+
+
+//data object Login
+//data object Home
+//data object Information
+//data object Playlist
+//data object Library
+
+var isSuccessfulLogin = false
 var user: User = User()
+private val destinations: List<Screen> = listOf(Home, Library, Playlist)
+
+@Composable
+fun LibraryScreen(backStack: SnapshotStateList<Screen>) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .background(Color.Black),
+        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "Library", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+    }
+}
 
 @Composable
 //@Preview(showBackground = true)
@@ -217,10 +336,44 @@ fun SongEntryVertical(
     }
 }
 
+@Composable
+fun HomeScreen(backStack: SnapshotStateList<Screen>) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .background(Color.Black),
+    ) {
+        Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            IconButton(onClick = { backStack.add(Information) }) {
+                Icon(
+                    painter = painterResource(R.drawable.settings),
+                    contentDescription = "Settings",
+                    tint = Color.White
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Home",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White
+            )
+        }
+    }
+
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 //@Preview(showBackground = true)
-fun MusicGallery(modifier: Modifier = Modifier) {
+fun MusicGallery(backStack: SnapshotStateList<Screen>) {
 
     var playlist = remember { mutableStateListOf<Song>() }
     playlist.add(
@@ -327,11 +480,12 @@ fun MusicGallery(modifier: Modifier = Modifier) {
     dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
     dropdownItems.add(DropdownItems("Share (coming soon)", R.drawable.share))
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
             .background(Black)
-            .padding(top = 24.dp),
+            .statusBarsPadding()
+            ,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -370,6 +524,7 @@ fun MusicGallery(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 80.dp)
+                .navigationBarsPadding()
                 .background(Color.Black),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             state = lazyListState
@@ -596,12 +751,12 @@ fun MusicGallery(modifier: Modifier = Modifier) {
 data class Song(val cover: Int, val title: String, val author: String, val length: String)
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
+fun Greeting(backStack: SnapshotStateList<Screen>) {
     var editable by remember { mutableStateOf(false) }
     var editButtonClickable by remember { mutableStateOf(true) }
     var revealSubmit by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(4.dp)) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(4.dp).statusBarsPadding()) {
         Row(modifier = Modifier.height(20.dp)) {}
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -613,7 +768,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.9f)
-                    .padding(top = 20.dp, start = 54.dp),
+                    .padding(start = 54.dp),
                 textAlign = TextAlign.Center
             )
 
@@ -630,8 +785,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 }, enabled = editButtonClickable) {
                     Icon(
                         painter = painterResource(id = R.drawable.edit),
-                        contentDescription = "Edit",
-                        modifier = Modifier.padding(top = Dp(10f))
+                        contentDescription = "Edit"
                     )
                 }
             }
@@ -925,7 +1079,7 @@ fun validateInput(text: String, source: String): Boolean {
         }
 
         "EMAIL" -> {
-            return if (text.matches(Regex("^[a-zA-Z0-9_!#\$%&’*+/=?`{|}~^.-]+@(apero.vn)"))) false else true
+            return if (text.matches(Regex("^[A-z0-9._-]+@(apero.vn)"))) false else true
         }
     }
     return false
@@ -982,10 +1136,10 @@ fun RememberCheckbox(
 }
 
 @Composable
-@Preview(showBackground = true)
-fun LoginScreen() {
-    var userEntries = remember { mutableStateListOf<UserEntry>()}
-    var successfulLogin by remember { mutableStateOf(false) }
+//@Preview(showBackground = true)
+fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Boolean>) {
+    var userEntries = remember { mutableStateListOf<UserEntry>() }
+    //var successfulLogin by remember { mutableStateOf(false) }
 
     var username by remember { mutableStateOf("") }
     var usernameCheck by remember { mutableStateOf(false) }
@@ -1031,8 +1185,19 @@ fun LoginScreen() {
             tint = Color.DarkGray
         )
     }
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(48.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .background(Color.Black)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp)
+                .height(48.dp)
+        ) {
             if (isSignupScreen) {
                 IconButton(onClick = {
                     isSignupScreen = false
@@ -1073,7 +1238,7 @@ fun LoginScreen() {
                 value = username,
                 onValueChange = {
                     username = it
-                    if (password!= "") usernameCheck = true
+                    if (password != "") usernameCheck = true
                 },
                 leadingIcon = usernameIcon,
                 shape = RoundedCornerShape(25),
@@ -1123,10 +1288,11 @@ fun LoginScreen() {
                     if (!usernameCheck && !passwordCheck) {
                         val foundUser =
                             userEntries.filter { it.username == username && it.password == password }
-                        if (foundUser.isNotEmpty()) {
-                            successfulLogin = true
-                        } else {
-                            successfulLogin = false
+                        success.value = foundUser.isNotEmpty()
+
+                        if (success.value) {
+                            backStack.add(Home)
+                            backStack.removeRange(0, backStack.indexOf(Home))
                         }
                     }
                 }, modifier = Modifier.width(280.dp)) {
@@ -1149,7 +1315,7 @@ fun LoginScreen() {
                     value = confirmPassword,
                     onValueChange = {
                         confirmPassword = it
-                        if (confirmPassword!= "") confirmPasswordCheck = false
+                        if (confirmPassword != "") confirmPasswordCheck = false
 
                     },
                     leadingIcon = passwordIcon,
@@ -1171,7 +1337,7 @@ fun LoginScreen() {
                     value = email,
                     onValueChange = {
                         email = it
-                        if (email!= "") emailCheck = false
+                        if (email != "") emailCheck = false
                     },
                     leadingIcon = emailIcon,
                     shape = RoundedCornerShape(25),
