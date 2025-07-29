@@ -346,7 +346,6 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                             Box {
                                 IconButton(onClick = {
                                     isDropdownMenuVisible = true
-                                    //playlist.removeAt(index)
                                 }, enabled = true) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.vertical_dots),
@@ -424,5 +423,118 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                 }
             }
         }
+    }
+}
+
+@Composable
+//@Preview(showBackground = true)
+fun SongEntry(
+    cover: Int = R.drawable.cover_1,
+    title: String = "Sample",
+    author: String = "Sample",
+    length: String = "00:00"
+) {
+    Row(
+        modifier = Modifier
+            .background(Black)
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = cover),
+            contentDescription = "Song cover",
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.CenterStart,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(10))
+        )
+        Column(modifier = Modifier.weight(0.7f), verticalArrangement = Arrangement.Center) {
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                author,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray
+            )
+        }
+        Text(
+            length,
+            modifier = Modifier.weight(0.15f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White,
+            textAlign = TextAlign.End
+        )
+        IconButton(onClick = {
+
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = R.drawable.vertical_dots),
+                contentDescription = "Grid",
+                modifier = Modifier.weight(0.05f),
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+//@Preview(showBackground = false)
+fun SongEntryVertical(
+    cover: Int = R.drawable.cover_1,
+    title: String = "Sample",
+    author: String = "Sample",
+    length: String = "00:00"
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
+        Box(
+            modifier = Modifier
+                .size(200.dp)
+                .clip(RoundedCornerShape(10))
+        ) {
+            Image(
+                painter = painterResource(id = cover),
+                contentDescription = "Song cover",
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.CenterStart,
+                modifier = Modifier.fillMaxSize()
+            )
+            IconButton(onClick = {
+
+            }, enabled = true) {
+                Icon(
+                    painter = painterResource(R.drawable.vertical_dots),
+                    contentDescription = "Grid",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(60.dp),
+                    tint = Color.White
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            author,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(length, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+
     }
 }

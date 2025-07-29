@@ -58,8 +58,14 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation3.ui.android)
+// Cannot use coil 3.3 due to an odd error: org.jetbrains.kotlin.util.FileAnalysisException
+    //implementation(libs.coil.compose)
+//    implementation(libs.coil.network.okhttp)
+//    implementation(libs.coil.kt.coil.compose)
+    implementation("io.coil-kt.coil3:coil-compose:3.0.0")
+    implementation (libs.glide.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
