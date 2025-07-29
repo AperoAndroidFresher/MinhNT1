@@ -15,10 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,14 +69,14 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
     var isSignupScreen by remember { mutableStateOf(false) }
     val usernameIcon = @Composable {
         Icon(
-            Icons.Default.Person,
+            painter = painterResource(R.drawable.user),
             contentDescription = "Username",
             tint = Color.DarkGray
         )
     }
     val passwordIcon = @Composable {
         Icon(
-            Icons.Default.Lock,
+            painter = painterResource(R.drawable.password),
             contentDescription = "Password",
             tint = Color.DarkGray
         )
@@ -96,7 +92,7 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
     }
     val emailIcon = @Composable {
         Icon(
-            Icons.Default.Email,
+            painter = painterResource(R.drawable.email),
             contentDescription = "Email",
             tint = Color.DarkGray
         )
