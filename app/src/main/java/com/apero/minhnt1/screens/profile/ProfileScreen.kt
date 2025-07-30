@@ -1,4 +1,4 @@
-package com.apero.minhnt1.screens
+package com.apero.minhnt1.screens.profile
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -62,7 +62,7 @@ import coil3.request.crossfade
 import com.apero.minhnt1.R
 import com.apero.minhnt1.ui.theme.AppTheme
 import com.apero.minhnt1.user
-import com.apero.minhnt1.validateInput
+import com.apero.minhnt1.utility.validateInput
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 

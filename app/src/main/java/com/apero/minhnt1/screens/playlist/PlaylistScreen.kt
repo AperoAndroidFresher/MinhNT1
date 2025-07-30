@@ -1,4 +1,4 @@
-package com.apero.minhnt1.screens
+package com.apero.minhnt1.screens.playlist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -204,7 +204,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                 .fillMaxWidth()
                 .padding(top = 80.dp)
                 .navigationBarsPadding()
-                .background(Color.Black),
+                .background(Black),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             state = lazyListState
         ) {
@@ -271,7 +271,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                             DropdownMenu(
                                 expanded = isDropdownMenuVisible,
                                 onDismissRequest = { isDropdownMenuVisible = false },
-                                modifier = Modifier.background(Color.Black)
+                                modifier = Modifier.background(Black)
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(dropdownItems[0].text, color = Color.White) },
@@ -311,7 +311,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 80.dp)
-                .background(Color.Black),
+                .background(Black),
             columns = GridCells.Fixed(2),
             state = lazyGridState,
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -355,7 +355,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                                     DropdownMenu(
                                         expanded = isDropdownMenuVisible,
                                         onDismissRequest = { isDropdownMenuVisible = false },
-                                        modifier = Modifier.background(Color.Black)
+                                        modifier = Modifier.background(Black)
                                     ) {
                                         DropdownMenuItem(
                                             text = {

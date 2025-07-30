@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,15 +36,17 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.apero.minhnt1.screens.HomeScreen
 import com.apero.minhnt1.screens.LibraryScreen
-import com.apero.minhnt1.screens.LoginScreen
-import com.apero.minhnt1.screens.PlaylistScreen
-import com.apero.minhnt1.screens.ProfileScreen
+import com.apero.minhnt1.screens.login.LoginScreen
+import com.apero.minhnt1.screens.login.LoginViewModel
+import com.apero.minhnt1.screens.playlist.PlaylistScreen
+import com.apero.minhnt1.screens.profile.ProfileScreen
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
+    private val viewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
 
@@ -94,7 +97,7 @@ class MainActivity : ComponentActivity() {
                         onBack = { backStack.removeLastOrNull() },
                         entryProvider = entryProvider {
                             entry<Login> {
-                                LoginScreen(backStack = backStack, success = successfulLogin)
+                                LoginScreen(backStack = backStack, success = successfulLogin, viewModel = viewModel)
                             }
                             entry<Home> {
                                 HomeScreen(backStack)
@@ -162,30 +165,14 @@ fun ErrorMessage(failedCheck: Boolean, text: String) {
     }
 }
 
-fun validateInput(text: String, source: String): Boolean {
-    when (source) {
-        "PHONE NUMBER" -> {
-            return !text.isDigitsOnly()
-        }
 
-        "NAME", "UNIVERSITY NAME" -> {
-            return !text.matches(Regex("^[A-z\\s]*$"))
-        }
-
-        "PASSWORD", "USERNAME" -> {
-            return !text.matches(Regex("^[A-z0-9]*\$"))
-        }
-
-        "EMAIL" -> {
-            return !text.matches(Regex("^[A-z0-9._-]+@(apero.vn)"))
-        }
-    }
-    return false
-}
 
 data class DropdownItems(val text: String, val icon: Int)
 
 data class User(
+    var username: String = "",
+    var password: String = "",
+    var email: String = "",
     var name: String = "",
     var phoneNumber: String = "",
     var universityName: String = "",
