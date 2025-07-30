@@ -1,4 +1,4 @@
-package com.apero.minhnt1.screens
+package com.apero.minhnt1.screens.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,12 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,34 +34,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.apero.minhnt1.ErrorMessage
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apero.minhnt1.Home
 import com.apero.minhnt1.R
 import com.apero.minhnt1.RememberCheckbox
 import com.apero.minhnt1.Screen
-import com.apero.minhnt1.UserEntry
-import com.apero.minhnt1.validateInput
 
 @Composable
 //@Preview(showBackground = true)
-fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Boolean>) {
-    var userEntries = remember { mutableStateListOf<UserEntry>() }
-    //var successfulLogin by remember { mutableStateOf(false) }
+fun LoginScreen(
+    viewModel: LoginViewModel,
+    backStack: SnapshotStateList<Screen>
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    var username by remember { mutableStateOf("") }
-    var usernameCheck by remember { mutableStateOf(false) }
-
-    var password by remember { mutableStateOf("") }
-    var passwordCheck by remember { mutableStateOf(false) }
-
-    var email by remember { mutableStateOf("") }
-    var emailCheck by remember { mutableStateOf(false) }
-
-    var confirmPassword by remember { mutableStateOf("") }
-    var confirmPasswordCheck by remember { mutableStateOf(false) }
-
-    var isPasswordVisible by remember { mutableStateOf(false) }
-    var isSignupScreen by remember { mutableStateOf(false) }
     val usernameIcon = @Composable {
         Icon(
             painter = painterResource(R.drawable.user),
@@ -82,9 +63,9 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
         )
     }
     val visibilityIcon = @Composable {
-        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+        IconButton(onClick = { state.isPasswordVisible.value = !state.isPasswordVisible.value }) {
             Icon(
-                if (isPasswordVisible) painterResource(R.drawable.visibility) else painterResource(R.drawable.visibility_off),
+                if (state.isPasswordVisible.value) painterResource(R.drawable.visibility) else painterResource(R.drawable.visibility_off),
                 contentDescription = "",
                 tint = Color.DarkGray
             )
@@ -110,9 +91,9 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
                 .padding(top = 24.dp)
                 .height(48.dp)
         ) {
-            if (isSignupScreen) {
+            if (state.isSignupScreen.value) {
                 IconButton(onClick = {
-                    isSignupScreen = false
+                    state.isSignupScreen.value = false
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.back),
@@ -139,7 +120,7 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
             )
 
             Text(
-                if (!isSignupScreen) "Login to your account" else "Sign Up",
+                if (!state.isSignupScreen.value) "Login to your account" else "Sign Up",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
@@ -147,35 +128,35 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(
-                value = username,
+                value = state.username.value,
                 onValueChange = {
-                    username = it
-                    if (password != "") usernameCheck = true
+                    state.username.value = it
+                    if (state.password.value != "") state.usernameFormatCheck.value = false
                 },
                 leadingIcon = usernameIcon,
                 shape = RoundedCornerShape(25),
                 placeholder = { Text("Username") },
                 singleLine = true,
                 supportingText = {
-                    ErrorMessage(failedCheck = usernameCheck, text = "Invalid format")
+                    ErrorMessage(passedCheck = state.usernameFormatCheck.value, text = "Invalid format")
                 }
             )
             Spacer(modifier = Modifier.height(10.dp))
             OutlinedTextField(
-                value = password,
+                value = state.password.value,
                 onValueChange = {
-                    password = it
-                    if (password != "") passwordCheck = false
+                    state.password.value = it
+                    if (state.password.value != "") state.passwordFormatCheck.value = true
                 },
                 leadingIcon = passwordIcon,
                 shape = RoundedCornerShape(25),
                 placeholder = { Text("Password") },
                 singleLine = true,
                 trailingIcon = visibilityIcon,
-                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (state.isPasswordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                 supportingText = {
                     ErrorMessage(
-                        failedCheck = passwordCheck,
+                        passedCheck = state.passwordFormatCheck.value,
                         text = "Invalid format"
                     )
                 }
@@ -183,7 +164,7 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
 
             )
             Spacer(modifier = Modifier.height(10.dp))
-            if (!isSignupScreen) {
+            if (!state.isSignupScreen.value) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -195,22 +176,16 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Button(onClick = {
-                    usernameCheck = validateInput(username, "USERNAME")
-                    passwordCheck = validateInput(password, "PASSWORD")
-                    if (!usernameCheck && !passwordCheck) {
-                        val foundUser =
-                            userEntries.filter { it.username == username && it.password == password }
-                        success.value = foundUser.isNotEmpty()
-
-                        if (success.value) {
+                    viewModel.processIntent(LoginMviIntents.LogIn(state.username.value, state.password.value))
+                    if (state.loginSuccess.value) {
                             backStack.add(Home)
                             backStack.removeRange(0, backStack.indexOf(Home))
                         }
-                    }
+
                 }, modifier = Modifier.width(280.dp)) {
                     Text("Log in")
                 }
-                Spacer(modifier = Modifier.height(200.dp))
+                Spacer(modifier = Modifier.height(120.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(),
@@ -218,16 +193,16 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text("Don't have an account?", color = Color.White)
-                    TextButton(onClick = { isSignupScreen = true }) {
+                    TextButton(onClick = { state.isSignupScreen.value = true }) {
                         Text("Sign Up")
                     }
                 }
             } else {
                 OutlinedTextField(
-                    value = confirmPassword,
+                    value = state.confirmPassword.value,
                     onValueChange = {
-                        confirmPassword = it
-                        if (confirmPassword != "") confirmPasswordCheck = false
+                        state.confirmPassword.value = it
+                        if (state.confirmPassword.value != "") state.confirmPasswordCheck.value = true
 
                     },
                     leadingIcon = passwordIcon,
@@ -235,10 +210,10 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
                     placeholder = { Text("Confirm password") },
                     singleLine = true,
                     trailingIcon = visibilityIcon,
-                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    visualTransformation = if (state.isPasswordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                     supportingText = {
                         ErrorMessage(
-                            failedCheck = passwordCheck,
+                            passedCheck = state.passwordFormatCheck.value,
                             text = "Invalid format"
                         )
                     }
@@ -246,10 +221,10 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
-                    value = email,
+                    value = state.email.value,
                     onValueChange = {
-                        email = it
-                        if (email != "") emailCheck = false
+                        state.email.value = it
+                        if (state.email.value != "") state.emailFormatCheck.value = true
                     },
                     leadingIcon = emailIcon,
                     shape = RoundedCornerShape(25),
@@ -257,42 +232,33 @@ fun LoginScreen(backStack: SnapshotStateList<Screen>, success: MutableState<Bool
                     singleLine = true,
                     supportingText = {
                         ErrorMessage(
-                            failedCheck = passwordCheck,
+                            passedCheck = state.emailFormatCheck.value,
                             text = "Invalid format"
                         )
                     }
 
                 )
 
-                Spacer(modifier = Modifier.height(128.dp))
+                Spacer(modifier = Modifier.height(64.dp))
                 Button(onClick = {
-                    usernameCheck = validateInput(username, "USERNAME")
-                    passwordCheck = validateInput(password, "PASSWORD")
-                    confirmPasswordCheck =
-                        validateInput(confirmPassword, "PASSWORD") && !(password == confirmPassword)
-                    emailCheck = validateInput(email, "EMAIL")
-                    if (!usernameCheck && !passwordCheck && !confirmPasswordCheck && !emailCheck) {
-                        userEntries.add(UserEntry(username, password, email))
-                        isSignupScreen = false
-                        username = ""
-                        password = ""
-                    } else {
-                        if (usernameCheck) {
-                            username = ""
-                        }
-                        if (passwordCheck || confirmPasswordCheck) {
-                            password = ""
-                            confirmPassword = ""
-                        }
-                        if (emailCheck) {
-                            email = ""
-                        }
-                    }
+                    viewModel.processIntent(LoginMviIntents.SignUp(state.username.value, state.password.value, state.confirmPassword.value, state.email.value))
                 }, modifier = Modifier.width(280.dp)) {
                     Text("Sign Up")
                 }
             }
 
         }
+    }
+}
+
+
+@Composable
+fun ErrorMessage(passedCheck: Boolean, text: String) {
+    if (!passedCheck) {
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            text = text,
+            color = MaterialTheme.colorScheme.error
+        )
     }
 }
