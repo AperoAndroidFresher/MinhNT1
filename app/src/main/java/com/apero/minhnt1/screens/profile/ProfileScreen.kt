@@ -38,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,26 +55,25 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.apero.minhnt1.R
 import com.apero.minhnt1.ui.theme.AppTheme
-import com.apero.minhnt1.user
-import com.apero.minhnt1.utility.validateInput
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @Composable
 @Preview(showBackground = true)
-fun ProfileScreen() {
-    var editable by remember { mutableStateOf(false) }
-    var editButtonClickable by remember { mutableStateOf(true) }
-    var revealSubmit by remember { mutableStateOf(false) }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    var isDarkMode by remember { mutableStateOf(true) }
+fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    AppTheme(darkTheme = isDarkMode) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+
+    AppTheme(darkTheme = state.isDarkMode.value) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -93,14 +91,15 @@ fun ProfileScreen() {
                     modifier = Modifier
                         .requiredWidth(64.dp)
                         .height(100.dp)
-                        .weight(0.1f).padding(start = 8.dp),
+                        .weight(0.1f)
+                        .padding(start = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = {
-                        isDarkMode = !isDarkMode
+                        viewModel.processIntent(ProfileMviIntents.ToggleDarkMode)
                     }) {
                         Icon(
-                            painter = if (isDarkMode) painterResource(id = R.drawable.moon)
+                            painter = if (state.isDarkMode.value) painterResource(id = R.drawable.moon)
                             else painterResource(id = R.drawable.sun),
                             contentDescription = "Toggle dark mode",
                             tint = MaterialTheme.colorScheme.onBackground
@@ -125,10 +124,10 @@ fun ProfileScreen() {
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = {
-                        editButtonClickable = false
-                        editable = true
-                        revealSubmit = true
-                    }, enabled = editButtonClickable) {
+                        state.editButtonClickable.value = false
+                        state.editable.value = true
+                        state.revealSubmit.value = true
+                    }, enabled = state.editButtonClickable.value) {
                         Icon(
                             painter = painterResource(id = R.drawable.edit),
                             contentDescription = "Edit",
@@ -138,11 +137,13 @@ fun ProfileScreen() {
                 }
             }
             var imageUri by remember { mutableStateOf("") }
-            var image = rememberAsyncImagePainter(ImageRequest.Builder(LocalContext.current)
-                .data(imageUri)
-                .crossfade(true)
-                .size(300, 300)
-                .build())
+            var image = rememberAsyncImagePainter(
+                ImageRequest.Builder(LocalContext.current)
+                    .data(imageUri)
+                    .crossfade(true)
+                    .size(300, 300)
+                    .build()
+            )
             Box(
                 modifier = Modifier
                     .height(180.dp)
@@ -169,7 +170,7 @@ fun ProfileScreen() {
                     onClick = {
                         imagePicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                     },
-                    enabled = !editButtonClickable,
+                    enabled = !state.editButtonClickable.value,
                     modifier = Modifier
                         .clip(CircleShape)
                         .background(Color(0x88000000))
@@ -185,17 +186,6 @@ fun ProfileScreen() {
 
             }
             Spacer(Modifier.height(20.dp))
-            var name by rememberSaveable { mutableStateOf("") }
-            var nameCheck by remember { mutableStateOf(false) }
-
-            var phoneNumber by rememberSaveable { mutableStateOf("") }
-            var phoneNumberCheck by remember { mutableStateOf(false) }
-
-            var universityName by rememberSaveable { mutableStateOf("") }
-            var universityNameCheck by remember { mutableStateOf(false) }
-
-            var selfDescription by rememberSaveable { mutableStateOf("") }
-
 
             Row(
                 modifier = Modifier
@@ -211,14 +201,14 @@ fun ProfileScreen() {
                 ) {
                     TextFieldComponent(
                         text = "NAME",
-                        description = name,
+                        description = state.name.value,
                         onValueChange = {
-                            name = it
+                            state.name.value = it
                             //nameCheck = validateInput(name, "NAME")
                         },
-                        failedCheck = nameCheck,
+                        passedCheck = state.nameFormatCheck.value,
                         placeholder = "Your name here...",
-                        enabled = editable,
+                        enabled = state.editable.value,
 
                         keyboardController = KeyboardActions(
                             onDone = { keyboardController?.hide() })
@@ -233,14 +223,14 @@ fun ProfileScreen() {
                 ) {
                     TextFieldComponent(
                         text = "PHONE NUMBER",
-                        description = phoneNumber,
+                        description = state.phoneNumber.value,
                         onValueChange = {
-                            phoneNumber = it
+                            state.phoneNumber.value = it
                             //phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
                         },
-                        failedCheck = phoneNumberCheck,
+                        passedCheck = state.phoneNumberFormatCheck.value,
                         placeholder = "Your phone number...",
-                        enabled = editable,
+                        enabled = state.editable.value,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         keyboardController = KeyboardActions(
                             onDone = { keyboardController?.hide() })
@@ -256,14 +246,14 @@ fun ProfileScreen() {
             ) {
                 TextFieldComponent(
                     text = "UNIVERSITY NAME",
-                    description = universityName,
+                    description = state.university.value,
                     onValueChange = {
-                        universityName = it
+                        state.university.value = it
                         //universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
                     },
-                    failedCheck = universityNameCheck,
+                    passedCheck = state.universityFormatCheck.value,
                     placeholder = "Your university name...",
-                    enabled = editable,
+                    enabled = state.editable.value,
                     keyboardController = KeyboardActions(
                         onDone = { keyboardController?.hide() })
                 )
@@ -277,14 +267,14 @@ fun ProfileScreen() {
             ) {
                 TextFieldComponent(
                     text = "DESCRIBE YOURSELF",
-                    description = selfDescription,
+                    description = state.selfDescription.value,
                     cornerMod = 15,
                     singleLine = false,
                     onValueChange = {
-                        selfDescription = it
+                        state.selfDescription.value = it
                     },
                     placeholder = "Enter a description about yourself...",
-                    enabled = editable,
+                    enabled = state.editable.value,
                     keyboardController = KeyboardActions(
                         onDone = { keyboardController?.hide() })
                 )
@@ -341,39 +331,23 @@ fun ProfileScreen() {
                 }
 
             }
-            if (revealSubmit)
+            if (state.revealSubmit.value)
                 Button(
                     onClick = {
-                        // validate user input
-                        nameCheck = validateInput(name, "NAME")
-                        phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
-                        universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
-                        if (!nameCheck && !phoneNumberCheck && !universityNameCheck) {
-                            // To be used if a list of Users is needed and
-                            // a certain value (i.e. phoneNumber) should be unique
-//                    if (users.any { it.phoneNumber == phoneNumber }) {
-//                        var targetUser = users.first { it.phoneNumber == phoneNumber }
-//                        targetUser.name = name
-//                        targetUser.universityName = universityName
-//                        targetUser.selfDescription = selfDescription
-//                    }
-                            // set user properties
-                            user.name = name
-                            user.phoneNumber = phoneNumber
-                            user.universityName = universityName
-                            user.selfDescription = selfDescription
+                        viewModel.processIntent(
+                            ProfileMviIntents.Submit(
+                                state.name.value,
+                                state.phoneNumber.value,
+                                state.university.value,
+                                state.selfDescription.value
+                            )
+                        )
+                        // show success dialog
+                        showAlert.value = true
+                        Executors.newSingleThreadScheduledExecutor().schedule({
+                            showAlert.value = false
+                        }, 2, TimeUnit.SECONDS)
 
-                            // modify interactable objects' states
-                            editable = false
-                            editButtonClickable = true
-                            revealSubmit = false
-
-                            // show success dialog
-                            showAlert.value = true
-                            Executors.newSingleThreadScheduledExecutor().schedule({
-                                showAlert.value = false
-                            }, 2, TimeUnit.SECONDS)
-                        }
                     },
                     modifier = Modifier
                         .height(50.dp)
@@ -398,9 +372,9 @@ fun TextFieldComponent(
     cornerMod: Int = 30,
     onValueChange: (String) -> Unit,
     singleLine: Boolean = true,
-    failedCheck: Boolean = false,
+    passedCheck: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    enabled: Boolean = false,
+    enabled: Boolean = true,
     keyboardController: KeyboardActions
 ) {
     Column {
@@ -429,7 +403,7 @@ fun TextFieldComponent(
                 keyboardOptions = keyboardOptions,
                 keyboardActions = keyboardController,
                 supportingText = {
-                    if (failedCheck) {
+                    if (!passedCheck) {
                         Text(
                             modifier = Modifier.fillMaxWidth(),
                             text = "Invalid input",

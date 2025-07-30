@@ -13,13 +13,13 @@ data class LoginMviState(
     var email: MutableState<String> = mutableStateOf(""),
     var selfDescription: MutableState<String> = mutableStateOf(""),
     var loginSuccess: MutableState<Boolean> = mutableStateOf(false),
-
-    ) {
-    var usernameFormatCheck = mutableStateOf(true)
-    var passwordFormatCheck = mutableStateOf(true)
-    var confirmPasswordCheck = mutableStateOf(true)
-    var emailFormatCheck = mutableStateOf(true)
-}
+    var usernameFormatCheck: MutableState<Boolean> = mutableStateOf(true),
+    var passwordFormatCheck: MutableState<Boolean> = mutableStateOf(true),
+    var confirmPasswordCheck: MutableState<Boolean> = mutableStateOf(true),
+    var emailFormatCheck: MutableState<Boolean> = mutableStateOf(true),
+    var isSignupScreen: MutableState<Boolean> =  mutableStateOf(false),
+    var isPasswordVisible: MutableState<Boolean> =mutableStateOf(false)
+    )
 
 abstract class LoginMviIntents(open val username: String, open val password: String) {
     data class LogIn(override val username: String, override val password: String) :

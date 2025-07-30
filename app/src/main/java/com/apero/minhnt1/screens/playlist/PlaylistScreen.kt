@@ -1,6 +1,5 @@
 package com.apero.minhnt1.screens.playlist
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -45,118 +44,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.R
-import com.apero.minhnt1.Screen
 import com.apero.minhnt1.Song
+import androidx.lifecycle.viewmodel.compose.viewModel
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 //@Preview(showBackground = true)
-fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
+fun PlaylistScreen(viewModel: PlaylistViewModel = viewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    state.playlist = addSongs(state.playlist)
 
-    var playlist = remember { mutableStateListOf<Song>() }
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_1,
-            title = "GOODNIGHT",
-            author = "STOMACH BOOK",
-            length = "03:17"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_2,
-            title = "Boys For Pele",
-            author = "Tori Amos",
-            length = "04:26"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_3,
-            title = "metallic life review",
-            author = "matmos",
-            length = "02:59"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_4,
-            title = "More",
-            author = "Pulp",
-            length = "03:32"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_1,
-            title = "STATIC CHAOS",
-            author = "STOMACH BOOK",
-            length = "02:46"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_2,
-            title = "Return to Form",
-            author = "Tori Amos",
-            length = "03:20"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_3,
-            title = "illusion",
-            author = "matmos",
-            length = "04:01"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_4,
-            title = "Endurance",
-            author = "Pulp",
-            length = "02:59"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_1,
-            title = "RADIANCE",
-            author = "STOMACH BOOK",
-            length = "03:50"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_2,
-            title = "Compassionate",
-            author = "Tori Amos",
-            length = "02:39"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_3,
-            title = "foggy morning",
-            author = "matmos",
-            length = "04:01"
-        )
-    )
-    playlist.add(
-        Song(
-            cover = R.drawable.cover_4,
-            title = "Mission",
-            author = "Pulp",
-            length = "02:59"
-        )
-    )
-    var isList by remember { mutableStateOf(true) }
-    var lazyListState = rememberLazyListState()
-    var lazyGridState = rememberLazyGridState()
+    val lazyListState = rememberLazyListState()
+    val lazyGridState = rememberLazyGridState()
 
-    var dropdownItems = remember { mutableStateListOf<DropdownItems>() }
+    val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
     dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
     dropdownItems.add(DropdownItems("Share (coming soon)", R.drawable.share))
     Row(
@@ -178,10 +81,10 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
             color = Color.White
         )
         IconButton(onClick = {
-            isList = !isList
+            viewModel.processIntent(PlaylistMviIntents.SwitchView)
         }, enabled = true) {
             Icon(
-                painter = painterResource(id = if (isList) R.drawable.grid else R.drawable.hamburger_icon),
+                painter = painterResource(id = if (state.isList.value) R.drawable.grid else R.drawable.hamburger_icon),
                 contentDescription = "Grid",
                 modifier = Modifier.weight(0.1f),
                 tint = Color.White
@@ -198,7 +101,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
             )
         }
     }
-    if (isList) {
+    if (state.isList.value) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -208,7 +111,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             state = lazyListState
         ) {
-            itemsIndexed(playlist) { index, item ->
+            itemsIndexed(state.playlist) { index, item ->
 //                SongEntry(
 //                    cover = playlist[index].cover,
 //                    title = playlist[index].title,
@@ -261,7 +164,6 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                     Box {
                         IconButton(onClick = {
                             isDropdownMenuVisible = true
-                            //playlist.removeAt(index)
                         }, enabled = true) {
                             Icon(
                                 painter = painterResource(id = R.drawable.vertical_dots),
@@ -283,7 +185,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                                         )
                                     },
                                     onClick = {
-                                        playlist.removeAt(index)
+                                        state.playlist.removeAt(index)
                                         isDropdownMenuVisible = false
                                     }
                                 )
@@ -316,7 +218,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
             state = lazyGridState,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(playlist.size) { index ->
+            items(state.playlist.size) { index ->
 //                SongEntryVertical(
 //                    cover = playlist[index].cover,
 //                    title = playlist[index].title,
@@ -334,7 +236,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                             .clip(RoundedCornerShape(10))
                     ) {
                         Image(
-                            painter = painterResource(id = playlist[index].cover),
+                            painter = painterResource(id = state.playlist[index].cover),
                             contentDescription = "Song cover",
                             contentScale = ContentScale.Crop,
                             alignment = Alignment.CenterStart,
@@ -372,7 +274,7 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                                                 )
                                             },
                                             onClick = {
-                                                playlist.removeAt(index)
+                                                state.playlist.removeAt(index)
                                                 isDropdownMenuVisible = false
                                             }
                                         )
@@ -401,21 +303,21 @@ fun PlaylistScreen(backStack: SnapshotStateList<Screen>) {
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        playlist[index].title,
+                        state.playlist[index].title,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        playlist[index].author,
+                        state.playlist[index].author,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        playlist[index].length,
+                        state.playlist[index].length,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White
                     )
@@ -537,4 +439,104 @@ fun SongEntryVertical(
         Text(length, style = MaterialTheme.typography.bodyMedium, color = Color.White)
 
     }
+}
+
+fun addSongs(playlist: SnapshotStateList<Song>): SnapshotStateList<Song> {
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "GOODNIGHT",
+            author = "STOMACH BOOK",
+            length = "03:17"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Boys For Pele",
+            author = "Tori Amos",
+            length = "04:26"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "metallic life review",
+            author = "matmos",
+            length = "02:59"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "More",
+            author = "Pulp",
+            length = "03:32"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "STATIC CHAOS",
+            author = "STOMACH BOOK",
+            length = "02:46"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Return to Form",
+            author = "Tori Amos",
+            length = "03:20"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "illusion",
+            author = "matmos",
+            length = "04:01"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "Endurance",
+            author = "Pulp",
+            length = "02:59"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_1,
+            title = "RADIANCE",
+            author = "STOMACH BOOK",
+            length = "03:50"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_2,
+            title = "Compassionate",
+            author = "Tori Amos",
+            length = "02:39"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_3,
+            title = "foggy morning",
+            author = "matmos",
+            length = "04:01"
+        )
+    )
+    playlist.add(
+        Song(
+            cover = R.drawable.cover_4,
+            title = "Mission",
+            author = "Pulp",
+            length = "02:59"
+        )
+    )
+    return playlist
 }

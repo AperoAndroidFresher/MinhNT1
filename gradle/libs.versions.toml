@@ -25,6 +25,7 @@ navigation3UiAndroid = "1.0.0-alpha05"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose" }
 coil-kt-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 glide-compose = { module = "com.github.bumptech.glide:compose", version.ref = "composeVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
