@@ -1,10 +1,7 @@
 package com.apero.minhnt1.screens.profile
 
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
 data class ProfileMviState(
     var name: MutableState<String> = mutableStateOf(""),
