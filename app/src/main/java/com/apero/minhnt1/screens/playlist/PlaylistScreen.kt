@@ -5,6 +5,7 @@ import android.content.ContentUris
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.icu.text.SimpleDateFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
@@ -60,6 +61,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.R
+import java.util.Date
 
 @Composable
 //@Preview(showBackground = true)
@@ -69,17 +71,9 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
     var isList by remember { mutableStateOf(false) }
 
     var playlist = remember { mutableStateListOf<Song>() }
-    playlist.clear()
-    playlist = populatePlaylist(resolver, playlist)
-    var imageData by remember { mutableStateOf<Bitmap?>(null) }
+    state.playlist.clear()
+    state.playlist = populatePlaylist(resolver, playlist)
 
-    var cover = rememberAsyncImagePainter(
-        ImageRequest.Builder(LocalContext.current)
-            .data(imageData)
-            .crossfade(true)
-            .size(300, 300)
-            .build()
-    )
     val lazyListState = rememberLazyListState()
     val lazyGridState = rememberLazyGridState()
 
@@ -136,15 +130,25 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
             state = lazyListState
         ) {
             var counter = 0
-            items(playlist.size) { index ->
+            items(state.playlist.size) { index ->
 //                SongEntry(
-//                    cover = playlist[index].cover,
-//                    title = playlist[index].title,
-//                    author = playlist[index].author,
-//                    length = playlist[index].length
+//                    cover = state.playlist[index].cover,
+//                    title = state.playlist[index].title,
+//                    author = state.playlist[index].author,
+//                    length = state.playlist[index].length
 //                )
                 counter++
                 Log.d("ListItem Count", counter.toString())
+
+                val cover = remember(state.playlist[index].id) {
+                    convertBitmapToImage(state.playlist[index].cover, context)
+                }
+
+                val painter = if (cover != null) {
+                    rememberAsyncImagePainter(model = cover)
+                } else {
+                    painterResource(R.drawable.cover_1)
+                }
 
                 Row(
                     modifier = Modifier
@@ -155,7 +159,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(
-                        painter = cover,
+                        painter = painter,
                         contentDescription = "Song cover",
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.CenterStart,
@@ -168,20 +172,21 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            playlist[index].title,
+                            state.playlist[index].title,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            playlist[index].artist,
+                            state.playlist[index].artist,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.Gray
                         )
                     }
                     Text(
-                        playlist[index].duration.toString(),
+                        millisToDuration(
+                        state.playlist[index].duration),
                         modifier = Modifier.weight(0.15f),
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White,
@@ -212,7 +217,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                         )
                                     },
                                     onClick = {
-                                        playlist.removeAt(index)
+                                        state.playlist.removeAt(index)
                                         isDropdownMenuVisible = false
                                     }
                                 )
@@ -246,16 +251,24 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             var counter = 0
-            items(playlist.size) { index ->
+            items(state.playlist.size) { index ->
 //                SongEntryVertical(
-//                    cover = playlist[index].cover,
-//                    title = playlist[index].title,
-//                    author = playlist[index].author,
-//                    length = playlist[index].length
+//                    cover = state.playlist[index].cover,
+//                    title = state.playlist[index].title,
+//                    author = state.playlist[index].author,
+//                    length = state.playlist[index].length
 //                )
                 counter++
                 Log.d("LVG Count", counter.toString())
-                imageData = convertBitmapToImage(playlist[index].cover, context = context)
+                val cover = remember(state.playlist[index].id) {
+                    convertBitmapToImage(state.playlist[index].cover, context)
+                }
+
+                val painter = if (cover != null) {
+                    rememberAsyncImagePainter(model = cover)
+                } else {
+                    painterResource(R.drawable.cover_1)
+                }
 
                 var isDropdownMenuVisible by remember { mutableStateOf(false) }
                 Column(
@@ -268,7 +281,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                             .clip(RoundedCornerShape(10))
                     ) {
                         Image(
-                            painter = cover,
+                            painter = painter,
                             contentDescription = "Song cover",
                             contentScale = ContentScale.Crop,
                             alignment = Alignment.CenterStart,
@@ -306,7 +319,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                                 )
                                             },
                                             onClick = {
-                                                playlist.removeAt(index)
+                                                state.playlist.removeAt(index)
                                                 isDropdownMenuVisible = false
                                             }
                                         )
@@ -335,21 +348,22 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        playlist[index].title,
+                        state.playlist[index].title,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        playlist[index].artist,
+                        state.playlist[index].artist,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        playlist[index].duration.toString(),
+                        millisToDuration(
+                            state.playlist[index].duration),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White
                     )
@@ -508,7 +522,7 @@ private fun populatePlaylist(
                     val artist = it.getString(artistColumn)
                     val duration = it.getLong(durationColumn)
                     val path = it.getString(dataColumn)
-
+                    val id = it.getString(idColumn)
                     val contentUri = ContentUris.withAppendedId(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                         it.getString(idColumn).toLong()
@@ -521,7 +535,8 @@ private fun populatePlaylist(
                             artist = artist,
                             duration = duration,
                             path = path,
-                            cover = contentUri
+                            cover = contentUri,
+                            id = id
                         )
                     )
                 } while (cursor.moveToNext())
@@ -530,6 +545,12 @@ private fun populatePlaylist(
 
     }
     return playlist
+
+}
+
+fun millisToDuration(duration: Long) : String {
+    val format = SimpleDateFormat("mm:ss")
+    return format.format(Date(duration))
 
 }
 
@@ -552,5 +573,6 @@ data class Song(
     val title: String,
     val artist: String,
     val duration: Long,
-    val path: Any
+    val path: Any,
+    val id: String
 )
