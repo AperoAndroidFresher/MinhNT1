@@ -18,6 +18,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,7 +40,6 @@ import com.apero.minhnt1.screens.profile.ProfileScreen
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.collectAsState
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
@@ -57,7 +57,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val backStack = remember { mutableStateListOf<Screen>(Login) }
-
             AppTheme {
                 Scaffold(
                     bottomBar = {
@@ -106,7 +105,7 @@ class MainActivity : ComponentActivity() {
                                 LibraryScreen(backStack)
                             }
                             entry<Playlist> {
-                                PlaylistScreen()
+                                PlaylistScreen(applicationContext)
                             }
                         }
                     )
@@ -149,7 +148,7 @@ data object Library : Screen {
 var user: User = User()
 private val destinations: List<Screen> = listOf(Home, Library, Playlist)
 
-data class Song(val cover: Int, val title: String, val author: String, val length: String)
+
 
 
 

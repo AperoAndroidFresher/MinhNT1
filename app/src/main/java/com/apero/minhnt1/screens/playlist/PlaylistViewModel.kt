@@ -26,6 +26,10 @@ class PlaylistViewModel : ViewModel() {
     }
 
     private fun switchView() {
-        _state.value.isList.value = false
+        _state.value.isList.value = !_state.value.isList.value
+    }
+
+    private fun populatePlaylist() {
+
     }
 }
