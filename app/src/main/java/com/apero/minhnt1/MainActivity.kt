@@ -1,6 +1,7 @@
 package com.apero.minhnt1
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,6 +41,7 @@ import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
+import coil3.BitmapImage
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
@@ -57,7 +59,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val backStack = remember { mutableStateListOf<Screen>(Login) }
-
             AppTheme {
                 Scaffold(
                     bottomBar = {
@@ -106,7 +107,7 @@ class MainActivity : ComponentActivity() {
                                 LibraryScreen(backStack)
                             }
                             entry<Playlist> {
-                                PlaylistScreen()
+                                PlaylistScreen(applicationContext)
                             }
                         }
                     )
@@ -149,7 +150,7 @@ data object Library : Screen {
 var user: User = User()
 private val destinations: List<Screen> = listOf(Home, Library, Playlist)
 
-data class Song(val cover: Int, val title: String, val author: String, val length: String)
+
 
 
 
