@@ -19,17 +19,13 @@ class PlaylistViewModel : ViewModel() {
         //   viewModelScope.launch {
         //       _intentFlow.collect { intent ->
         when (intent) {
-            is PlaylistMviIntents.SwitchView -> switchView()
+            PlaylistMviIntents.SwitchView -> {
+
+            }
         }
         //      }
         //  }
     }
 
-    private fun switchView() {
-        _state.value.isList.value = !_state.value.isList.value
-    }
 
-    private fun populatePlaylist() {
-
-    }
 }

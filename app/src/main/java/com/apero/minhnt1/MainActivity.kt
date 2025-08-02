@@ -1,11 +1,13 @@
 package com.apero.minhnt1
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,10 +34,11 @@ import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.apero.minhnt1.screens.HomeScreen
-import com.apero.minhnt1.screens.LibraryScreen
+import com.apero.minhnt1.screens.playlist.PlaylistScreen
 import com.apero.minhnt1.screens.login.LoginScreen
 import com.apero.minhnt1.screens.login.LoginViewModel
-import com.apero.minhnt1.screens.playlist.PlaylistScreen
+import com.apero.minhnt1.screens.library.LibraryScreen
+import com.apero.minhnt1.screens.library.Song
 import com.apero.minhnt1.screens.profile.ProfileScreen
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
@@ -44,9 +47,23 @@ import kotlinx.coroutines.launch
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
     private val viewModel: LoginViewModel by viewModels()
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
-
+//        val requestPermissionLauncher =
+//            registerForActivityResult(RequestPermission()
+//            ) { isGranted: Boolean ->
+//                if (isGranted) {
+//                    // Permission is granted. Continue the action or workflow in your
+//                    // app.
+//                } else {
+//                    // Explain to the user that the feature is unavailable because the
+//                    // feature requires a permission that the user has denied. At the
+//                    // same time, respect the user's decision. Don't link to system
+//                    // settings in an effort to convince the user to change their
+//                    // decision.
+//                }
+//            }
         var keepSplashScreen = true
         super.onCreate(savedInstanceState)
         splashscreen.setKeepOnScreenCondition { keepSplashScreen }
@@ -69,7 +86,7 @@ class MainActivity : ComponentActivity() {
                                     NavigationBarItem(
                                         selected = isSelected,
                                         onClick = {
-                                            backStack.clear()
+                                            //backStack.clear()
                                             backStack.add(destination)
                                             currSelection = destination
                                         },
@@ -101,8 +118,10 @@ class MainActivity : ComponentActivity() {
                             entry<Information> {
                                 ProfileScreen()
                             }
-                            entry<Library> {
-                                LibraryScreen(backStack)
+                            entry<Library> {key ->
+                                LibraryScreen(applicationContext, backStack = backStack) {
+
+                                }
                             }
                             entry<Playlist> {
                                 PlaylistScreen(applicationContext)
@@ -138,6 +157,7 @@ data object Information : Screen {
 data object Playlist : Screen {
     override val name = "Playlist"
     override val icon = R.drawable.playlist
+
 }
 
 data object Library : Screen {
@@ -145,7 +165,6 @@ data object Library : Screen {
     override val icon = R.drawable.music
 }
 
-var user: User = User()
 private val destinations: List<Screen> = listOf(Home, Library, Playlist)
 
 
