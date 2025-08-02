@@ -2,8 +2,6 @@ package com.apero.minhnt1.screens.playlist
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,7 +57,6 @@ import coil3.compose.rememberAsyncImagePainter
 import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.R
 import com.apero.minhnt1.screens.library.IncomingSong
-import com.apero.minhnt1.screens.library.Song
 import com.apero.minhnt1.screens.library.convertBitmapToImage
 import com.apero.minhnt1.screens.library.millisToDuration
 
