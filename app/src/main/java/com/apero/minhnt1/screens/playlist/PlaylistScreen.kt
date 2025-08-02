@@ -1,17 +1,10 @@
 package com.apero.minhnt1.screens.playlist
 
-import android.content.ContentResolver
-import android.content.ContentUris
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.icu.text.SimpleDateFormat
-import android.media.MediaMetadataRetriever
-import android.net.Uri
-import android.provider.MediaStore
-import android.util.Log
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,126 +15,395 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.R
-import java.util.Date
+import com.apero.minhnt1.screens.library.IncomingSong
+import com.apero.minhnt1.screens.library.convertBitmapToImage
+import com.apero.minhnt1.screens.library.millisToDuration
+
 
 @Composable
-//@Preview(showBackground = true)
 fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel()) {
-    var resolver = context.contentResolver
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var isList by remember { mutableStateOf(false) }
-
-    var playlist = remember { mutableStateListOf<Song>() }
-    state.playlist.clear()
-    state.playlist = populatePlaylist(resolver, playlist)
-
-    val lazyListState = rememberLazyListState()
-    val lazyGridState = rememberLazyGridState()
-
+    var showAddToPlaylistPopup by remember { mutableStateOf(IncomingSong.showAddToPlaylistPopup) }
+    var showPlaylistContents by remember { mutableStateOf(false) }
+    var playlistIndex by remember { mutableStateOf(0) }
+    var showCreatePlaylist by remember { mutableStateOf(false) }
     val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
-    dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
-    dropdownItems.add(DropdownItems("Share (coming soon)", R.drawable.share))
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .background(Black)
-            .statusBarsPadding(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "My Playlist",
+    dropdownItems.add(DropdownItems("Remove playlist", R.drawable.remove))
+    dropdownItems.add(DropdownItems("Rename", R.drawable.pencil))
+    val lazyListState = rememberLazyListState()
+    Column {
+        Row(
             modifier = Modifier
-                .weight(0.8f)
-                .padding(start = 96.dp),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-        IconButton(onClick = {
-            viewModel.processIntent(PlaylistMviIntents.SwitchView)
-        }, enabled = true) {
-            Icon(
-                painter = painterResource(id = if (isList) R.drawable.grid else R.drawable.hamburger_icon),
-                contentDescription = "Grid",
-                modifier = Modifier.weight(0.1f),
-                tint = Color.White
+                .fillMaxWidth()
+                .requiredHeight(80.dp)
+                .background(Black)
+                .statusBarsPadding(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                "My Playlist",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
         }
-        IconButton(onClick = {
 
-        }, enabled = true) {
-            Icon(
-                painter = painterResource(id = R.drawable.sort_descending),
-                contentDescription = "Sort",
-                modifier = Modifier.weight(0.1f),
-                tint = Color.White
-            )
+        if (state.playlistLibrary.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .background(Color.Black)
+                    .padding(64.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "You currently don't have any playlists. Click the + button below to create a new one.",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+                IconButton(
+                    onClick = {
+                        showCreatePlaylist = true
+                    },
+                    modifier = Modifier.size(120.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.add),
+                        contentDescription = "Grid",
+
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+        else if (showPlaylistContents && state.playlistLibrary[playlistIndex].playlist.isNotEmpty()) {
+            PlaylistContentScreen(context, state, playlistIndex)
+        }
+        else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .background(Black),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                state = lazyListState
+            ) {
+                itemsIndexed(state.playlistLibrary) { index, item ->
+                    val cover = if (state.playlistLibrary[index].playlist.isNotEmpty()) remember(state.playlistLibrary[index].playlist[0].id) {
+                        convertBitmapToImage(state.playlistLibrary[index].playlist[0].cover, context)
+                    } else null
+
+                    val painter = if (cover != null) {
+                        rememberAsyncImagePainter(model = cover)
+                    } else {
+                        painterResource(R.drawable.cover_1)
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .background(Black)
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                            .clickable {
+                                playlistIndex = index
+                                showPlaylistContents = true },
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painter,
+                            contentDescription = "Playlist cover",
+                            contentScale = ContentScale.Crop,
+                            alignment = Alignment.CenterStart,
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(10))
+                        )
+                        Column(
+                            modifier = Modifier.weight(0.7f),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                item.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "${item.playlist.size} songs",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Gray
+                            )
+                        }
+                        var isDropdownMenuVisible by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = {
+                                isDropdownMenuVisible = true
+                            }, enabled = true) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.vertical_dots),
+                                    contentDescription = "Grid",
+                                    tint = Color.White
+                                )
+                                DropdownMenu(
+                                    expanded = isDropdownMenuVisible,
+                                    onDismissRequest = { isDropdownMenuVisible = false },
+                                    modifier = Modifier.background(Black)
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(dropdownItems[0].text, color = Color.White)
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(id = dropdownItems[0].icon),
+                                                contentDescription = "Remove",
+                                                tint = Color.White
+                                            )
+                                        },
+                                        onClick = {
+                                            state.playlistLibrary.removeAt(index)
+                                            isDropdownMenuVisible = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(dropdownItems[1].text, color = Color.White) },
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(id = dropdownItems[1].icon),
+                                                contentDescription = "Rename",
+                                                tint = Color.White
+                                            )
+                                        },
+                                        onClick = { state.showRenameDialog.value = true
+                                            isDropdownMenuVisible = false}
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (state.showRenameDialog.value) RenameDialog(state, index)
+                }
+            }
+
+        }
+        if (showCreatePlaylist) {
+            //CreatePlaylistDialog(onDismissRequest = {showCreatePlaylist = false}, state)
+            Dialog(onDismissRequest = { showCreatePlaylist = false }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 20.dp)
+                    ) {
+                        var text by remember { mutableStateOf("") }
+                        Text(
+                            text = "New Playlist",
+                            modifier = Modifier
+                                .wrapContentSize(Alignment.Center),
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp,
+                            color = Color(0xff2BB673)
+                        )
+                        OutlinedTextField(
+                            value = text,
+                            onValueChange = {
+                                text = it
+                            },
+                            shape = RoundedCornerShape(25),
+                            placeholder = { Text("Give your playlist a title") },
+                            singleLine = true,
+
+                            )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Black),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            TextButton(onClick = {}) {
+                                Text("Cancel")
+                            }
+                            TextButton(onClick = {
+                                state.playlistLibrary.add(Playlist(text))
+                                showCreatePlaylist = false
+                            }) {
+                                Text("Create", color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showAddToPlaylistPopup && state.playlistLibrary.isNotEmpty()) {
+            Dialog(onDismissRequest = {
+                IncomingSong.showAddToPlaylistPopup = false
+                showAddToPlaylistPopup = false }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 20.dp)
+                    ) {
+                        var text by remember { mutableStateOf("") }
+                        Text(
+                            text = "Choose Playlist",
+                            modifier = Modifier
+                                .wrapContentSize(Alignment.Center),
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 32.sp,
+                            color = Color.White
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Black),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            state = lazyListState
+                        ) {
+                            itemsIndexed(state.playlistLibrary) { index, item ->
+                                Row(
+                                    modifier = Modifier
+                                        .background(Black)
+                                        .fillMaxWidth()
+                                        .padding(8.dp)
+                                        .clickable {
+                                            state.playlistLibrary[index].playlist.add(IncomingSong.Song)
+                                            showAddToPlaylistPopup = false
+                                            IncomingSong.showAddToPlaylistPopup = false
+                                        },
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Image(
+                                        painter = painterResource(state.playlistLibrary[index].playlistCover),
+                                        contentDescription = "Playlist cover",
+                                        contentScale = ContentScale.Crop,
+                                        alignment = Alignment.CenterStart,
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(RoundedCornerShape(10))
+                                    )
+                                    Column(
+                                        modifier = Modifier.weight(0.7f),
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            item.name,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = "${item.playlist.size} songs",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                }
+                                if (state.showRenameDialog.value) RenameDialog(state, index)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-    if (state.isList.value) {
+
+    @Composable
+    fun CreatePlaylistDialog(
+        onDismissRequest: () -> Unit,
+        state: PlaylistMviState
+    ) {
+    }
+}
+
+@Composable
+fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistIndex: Int) {
+    var playlistNotEmpty by remember { mutableStateOf(true) }
+    var playlistContent = state.playlistLibrary[playlistIndex].playlist
+    val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
+    dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
+    dropdownItems.add(DropdownItems("Share", R.drawable.share))
+    if (playlistNotEmpty) {
+        val lazyListState = rememberLazyListState()
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 80.dp)
                 .navigationBarsPadding()
                 .background(Black),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             state = lazyListState
         ) {
-            var counter = 0
-            items(state.playlist.size) { index ->
-//                SongEntry(
-//                    cover = state.playlist[index].cover,
-//                    title = state.playlist[index].title,
-//                    author = state.playlist[index].author,
-//                    length = state.playlist[index].length
-//                )
-                counter++
-                Log.d("ListItem Count", counter.toString())
+            items(playlistContent.size) { index ->
 
-                val cover = remember(state.playlist[index].id) {
-                    convertBitmapToImage(state.playlist[index].cover, context)
+                val cover = remember(state.playlistLibrary[playlistIndex].playlist[index].id) {
+                    convertBitmapToImage(state.playlistLibrary[playlistIndex].playlist[index].cover, context)
                 }
 
                 val painter = if (cover != null) {
@@ -172,13 +434,13 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            state.playlist[index].title,
+                            state.playlistLibrary[playlistIndex].playlist[index].title,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            state.playlist[index].artist,
+                            state.playlistLibrary[playlistIndex].playlist[index].artist,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.Gray
@@ -186,7 +448,8 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                     }
                     Text(
                         millisToDuration(
-                        state.playlist[index].duration),
+                            state.playlistLibrary[playlistIndex].playlist[index].duration
+                        ),
                         modifier = Modifier.weight(0.15f),
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White,
@@ -208,21 +471,28 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                 modifier = Modifier.background(Black)
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text(dropdownItems[0].text, color = Color.White) },
+                                    text = {
+                                        Text(
+                                            dropdownItems[0].text,
+                                            color = Color.White
+                                        )
+                                    },
                                     leadingIcon = {
                                         Icon(
                                             painter = painterResource(id = dropdownItems[0].icon),
-                                            contentDescription = "Remove",
+                                            contentDescription = "Remove from playlist",
                                             tint = Color.White
                                         )
                                     },
                                     onClick = {
-                                        state.playlist.removeAt(index)
+                                        state.playlistLibrary[playlistIndex].playlist.removeAt(index)
+                                        playlistNotEmpty = state.playlistLibrary[playlistIndex].playlist.isNotEmpty()
                                         isDropdownMenuVisible = false
                                     }
                                 )
+
                                 DropdownMenuItem(
-                                    text = { Text(dropdownItems[1].text, color = Color.Gray) },
+                                    text = { Text(dropdownItems[1].text, color = Color.White) },
                                     leadingIcon = {
                                         Icon(
                                             painter = painterResource(id = dropdownItems[1].icon),
@@ -231,7 +501,19 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                         )
                                     },
                                     onClick = {
-                                        isDropdownMenuVisible = false
+                                        val sendIntent: Intent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(
+                                                Intent.EXTRA_STREAM,
+                                                state.playlistLibrary[playlistIndex].playlist[index].cover
+                                            )
+                                            type = "audio/*"
+                                        }
+                                        sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+                                        val shareIntent = Intent.createChooser(sendIntent, null)
+                                        shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        startActivity(context, shareIntent, null)
                                     }
                                 )
                             }
@@ -241,338 +523,75 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
             }
         }
     } else {
-        LazyVerticalGrid(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 80.dp)
-                .background(Black),
-            columns = GridCells.Fixed(2),
-            state = lazyGridState,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            var counter = 0
-            items(state.playlist.size) { index ->
-//                SongEntryVertical(
-//                    cover = state.playlist[index].cover,
-//                    title = state.playlist[index].title,
-//                    author = state.playlist[index].author,
-//                    length = state.playlist[index].length
-//                )
-                counter++
-                Log.d("LVG Count", counter.toString())
-                val cover = remember(state.playlist[index].id) {
-                    convertBitmapToImage(state.playlist[index].cover, context)
-                }
-
-                val painter = if (cover != null) {
-                    rememberAsyncImagePainter(model = cover)
-                } else {
-                    painterResource(R.drawable.cover_1)
-                }
-
-                var isDropdownMenuVisible by remember { mutableStateOf(false) }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(200.dp)
-                            .clip(RoundedCornerShape(10))
-                    ) {
-                        Image(
-                            painter = painter,
-                            contentDescription = "Song cover",
-                            contentScale = ContentScale.Crop,
-                            alignment = Alignment.CenterStart,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        IconButton(onClick = {
-
-                        }, enabled = true) {
-                            Box {
-                                IconButton(onClick = {
-                                    isDropdownMenuVisible = true
-                                }, enabled = true) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.vertical_dots),
-                                        contentDescription = "Grid",
-                                        tint = Color.White
-                                    )
-                                    DropdownMenu(
-                                        expanded = isDropdownMenuVisible,
-                                        onDismissRequest = { isDropdownMenuVisible = false },
-                                        modifier = Modifier.background(Black)
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    dropdownItems[0].text,
-                                                    color = Color.White
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter = painterResource(id = dropdownItems[0].icon),
-                                                    contentDescription = "Remove",
-                                                    tint = Color.White
-                                                )
-                                            },
-                                            onClick = {
-                                                state.playlist.removeAt(index)
-                                                isDropdownMenuVisible = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    dropdownItems[1].text,
-                                                    color = Color.Gray
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter = painterResource(id = dropdownItems[1].icon),
-                                                    contentDescription = "Share",
-                                                    tint = Color.White
-                                                )
-                                            },
-                                            onClick = {
-                                                isDropdownMenuVisible = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        state.playlist[index].title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        state.playlist[index].artist,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        millisToDuration(
-                            state.playlist[index].duration),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
-                    )
-
-                }
-            }
-        }
-    }
-}
-
-@Composable
-//@Preview(showBackground = true)
-fun SongEntry(
-    cover: Int = R.drawable.cover_1,
-    title: String = "Sample",
-    author: String = "Sample",
-    length: String = "00:00"
-) {
-    Row(
-        modifier = Modifier
-            .background(Black)
-            .fillMaxWidth()
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = painterResource(id = cover),
-            contentDescription = "Song cover",
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.CenterStart,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(10))
-        )
-        Column(modifier = Modifier.weight(0.7f), verticalArrangement = Arrangement.Center) {
             Text(
-                title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
+                text = "Playlist is empty",
+                style = MaterialTheme.typography.headlineMedium,
                 color = Color.White
             )
-            Text(
-                author,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
-            )
-        }
-        Text(
-            length,
-            modifier = Modifier.weight(0.15f),
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
-            textAlign = TextAlign.End
-        )
-        IconButton(onClick = {
-
-        }, enabled = true) {
-            Icon(
-                painter = painterResource(id = R.drawable.vertical_dots),
-                contentDescription = "Grid",
-                modifier = Modifier.weight(0.05f),
-                tint = Color.White
-            )
         }
     }
 }
 
 @Composable
-//@Preview(showBackground = false)
-fun SongEntryVertical(
-    cover: Int = R.drawable.cover_1,
-    title: String = "Sample",
-    author: String = "Sample",
-    length: String = "00:00"
+fun RenameDialog(
+    state: PlaylistMviState,
+    index: Int
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(10.dp)) {
-        Box(
+    Dialog(onDismissRequest = { state.showRenameDialog.value = false }) {
+        Card(
             modifier = Modifier
-                .size(200.dp)
-                .clip(RoundedCornerShape(10))
+                .fillMaxWidth()
+                .height(300.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Image(
-                painter = painterResource(id = cover),
-                contentDescription = "Song cover",
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.CenterStart,
-                modifier = Modifier.fillMaxSize()
-            )
-            IconButton(onClick = {
-
-            }, enabled = true) {
-                Icon(
-                    painter = painterResource(R.drawable.vertical_dots),
-                    contentDescription = "Grid",
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 20.dp)
+            ) {
+                var text by remember { mutableStateOf("") }
+                Text(
+                    text = "Rename",
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(60.dp),
-                    tint = Color.White
+                        .wrapContentSize(Alignment.Center),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp,
+                    color = Color(0xff2BB673)
                 )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                    },
+                    shape = RoundedCornerShape(25),
+                    placeholder = { Text("Give your playlist a new name") },
+                    singleLine = true,
+
+                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Black),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    TextButton(onClick = {state.showRenameDialog.value = false}) {
+                        Text("Cancel")
+                    }
+                    TextButton(onClick = {
+                        state.playlistLibrary[index].name = text
+                        state.showRenameDialog.value = false
+                    }) {
+                        Text("Rename", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            author,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.Gray
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(length, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-
     }
 }
-
-private fun populatePlaylist(
-    resolver: ContentResolver?,
-    playlist: SnapshotStateList<Song>
-): SnapshotStateList<Song> {
-    var uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-    val projection = arrayOf(
-        MediaStore.Audio.Media._ID,
-        MediaStore.Audio.Media.TITLE,
-        MediaStore.Audio.Media.ARTIST,
-        MediaStore.Audio.Media.DURATION,
-        MediaStore.Audio.Media.DATA
-    )
-    val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
-    val selection =
-        "${MediaStore.Audio.Media.IS_MUSIC} != 0"
-    val cursor = resolver?.query(uri, projection, selection, null, null)
-    cursor?.use {
-
-        //val idColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-        when {
-            !cursor.moveToFirst() -> {
-                Log.e("PlaylistScreen", "No media found")
-            }
-
-            else -> {
-                val idColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-                val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-                val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-                val durationColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-                val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-                do {
-                    val title = it.getString(titleColumn)
-                    val artist = it.getString(artistColumn)
-                    val duration = it.getLong(durationColumn)
-                    val path = it.getString(dataColumn)
-                    val id = it.getString(idColumn)
-                    val contentUri = ContentUris.withAppendedId(
-                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        it.getString(idColumn).toLong()
-                    )
-                    //var data = retriever.embeddedPicture
-                    //val cover = BitmapFactory.decodeByteArray(data, 0, data!!.size).asImage()
-                    playlist.add(
-                        Song(
-                            title = title,
-                            artist = artist,
-                            duration = duration,
-                            path = path,
-                            cover = contentUri,
-                            id = id
-                        )
-                    )
-                } while (cursor.moveToNext())
-            }
-        }
-
-    }
-    return playlist
-
-}
-
-fun millisToDuration(duration: Long) : String {
-    val format = SimpleDateFormat("mm:ss")
-    return format.format(Date(duration))
-
-}
-
-fun convertBitmapToImage(contentUri: Uri, context: Context): Bitmap? {
-    var retriever = MediaMetadataRetriever()
-    try {
-        retriever.setDataSource(context, contentUri)
-        var data = retriever.embeddedPicture
-        if (data != null) return BitmapFactory.decodeByteArray(data, 0, data.size)
-    } catch (e: Exception) {
-
-    } finally {
-        retriever.release()
-    }
-    return null
-}
-
-data class Song(
-    val cover: Uri,
-    val title: String,
-    val artist: String,
-    val duration: Long,
-    val path: Any,
-    val id: String
-)

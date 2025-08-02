@@ -65,7 +65,7 @@ dependencies {
 //    implementation(libs.coil.kt.coil.compose)
     implementation("io.coil-kt.coil3:coil-compose:3.0.0")
     implementation (libs.glide.compose)
-
+    implementation ("com.google.accompanist:accompanist-permissions:0.37.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
