@@ -22,67 +22,50 @@ class Converters {
 
     @TypeConverter
     fun fromSong(value: Song?): String? {
-        return value?.let {"${it.cover},${it.title},${it.artist},${it.duration},${it.path},${it.songID}"}
+        return value?.let { "${it.cover},${it.title},${it.artist},${it.duration},${it.path},${it.songID},${it.inPlaylistID}" }
     }
 
     @TypeConverter
     fun toSong(value: String?): Song? {
-        return value?.split(",")?.let {parts ->
-            if (parts.size == 6) {
-                Song(parts[0].toUri(), parts[1], parts[2], parts[3].toLong(), parts[4], parts[5].toInt())
+        return value?.split(",")?.let { parts ->
+            if (parts.size == 7) {
+                Song(
+                    parts[0].substringAfterLast('=').toUri(),
+                    parts[1].substringAfterLast('=').trim(),
+                    parts[2].substringAfterLast('=').trim(),
+                    parts[3].substringAfterLast('=').trim().toLong(),
+                    parts[4].substringAfterLast('=').trim(),
+                    parts[5].substringAfterLast('=').trim().toInt(),
+                    parts[6].substringAfterLast('=').substringBeforeLast(')').toInt()
+                )
             } else null
         }
     }
 
-//    @TypeConverter
-//    fun fromPlaylist(value: Playlist?): String? {
-//        var songList = ""
-//        for (i in 0..value?.songList!!.size) {
-//            songList += if (i == 0) value.songList[i]
-//            else "&" + fromSong(value.songList[i])
-//        }
-//
-//        return value.let {"${it.playlistID},${it.name},${it.playlistCover}," + songList}
-//    }
-
     @TypeConverter
-    fun fromSongList(value: SnapshotStateList<Song?>): String? {
+    fun fromSongList(value: MutableList<Song?>): String? {
         var songList = ""
-        for (i in 0..value.size) {
-            songList += if (i == 0) value[i]
-            else "&" + fromSong(value[i])
+        if (value.isNotEmpty()) {
+            for (i in 0..value.size - 1) {
+                songList += if (i == 0) value[i]
+                else "&" + fromSong(value[i])
+            }
         }
-
         return songList
     }
 
     @TypeConverter
-    fun toSongList(value: String?): SnapshotStateList<Song?> {
-        var list = mutableStateListOf<Song?>()
+    fun toSongList(value: String?): MutableList<Song?> {
+        var list = mutableListOf<Song?>()
         var decodedString = value?.split('&')
         if (decodedString != null) {
             for (s in decodedString) {
-                list.add(toSong(s))
+                if (s.isNotEmpty()) {
+                    list.add(toSong(s))
+                }
             }
         }
         return list
     }
 
-    private fun recreatePlaylist(value: String): SnapshotStateList<Song> {
-        var splitString = value.split("&")
-        var playlist = mutableStateListOf<Song>()
-        for (song in splitString) {
-            playlist.add(toSong(song)!!)
-        }
-        return playlist
-    }
-
-//    @TypeConverter
-//    fun toPlaylist(value: String?): Playlist? {
-//        return value?.split(",")?.let {parts ->
-//            if (parts.size == 4) {
-//                Playlist(parts[0].toInt(), parts[1], parts[2].toInt(), recreatePlaylist(parts[3]))
-//            } else null
-//        }
-//    }
 }

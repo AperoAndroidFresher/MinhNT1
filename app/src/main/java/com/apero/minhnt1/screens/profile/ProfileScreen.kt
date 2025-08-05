@@ -51,7 +51,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,8 +61,13 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.apero.minhnt1.R
+import com.apero.minhnt1.Username
 import com.apero.minhnt1.database.AppDatabase
+import com.apero.minhnt1.database.user.User
 import com.apero.minhnt1.ui.theme.AppTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -73,6 +77,13 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
     val userDao = AppDatabase.getDatabase(context = context).userDao()
     val keyboardController = LocalSoftwareKeyboardController.current
     var imageUri by remember { mutableStateOf("") }
+    var currentUser: User
+
+    runBlocking {
+        withContext(Dispatchers.IO) {
+            currentUser = userDao.getUser(Username.value)
+        }
+    }
 
     AppTheme(darkTheme = state.isDarkMode.value) {
         Column(
@@ -125,10 +136,10 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = {
-                        state.editButtonClickable.value = false
-                        state.editable.value = true
-                        state.revealSubmit.value = true
-                    }, enabled = state.editButtonClickable.value) {
+                        state.isEditButtonClickable.value = false
+                        state.isEditable.value = true
+                        state.shouldRevealSubmit.value = true
+                    }, enabled = state.isEditButtonClickable.value) {
                         Icon(
                             painter = painterResource(id = R.drawable.edit),
                             contentDescription = "Edit",
@@ -145,6 +156,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                     .size(300, 300)
                     .build()
             )
+
             Box(
                 modifier = Modifier
                     .height(180.dp)
@@ -171,7 +183,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                     onClick = {
                         imagePicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                     },
-                    enabled = !state.editButtonClickable.value,
+                    enabled = !state.isEditButtonClickable.value,
                     modifier = Modifier
                         .clip(CircleShape)
                         .background(Color(0x88000000))
@@ -206,9 +218,9 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                         onValueChange = {
                             state.name.value = it
                         },
-                        passedCheck = state.nameFormatCheck.value,
+                        passedCheck = state.isNameFormatValid.value,
                         placeholder = "Your name here...",
-                        enabled = state.editable.value,
+                        enabled = state.isEditable.value,
 
                         keyboardController = KeyboardActions(
                             onDone = { keyboardController?.hide() })
@@ -227,9 +239,9 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                         onValueChange = {
                             state.phoneNumber.value = it
                         },
-                        passedCheck = state.phoneNumberFormatCheck.value,
+                        passedCheck = state.isPhoneNumberFormatValid.value,
                         placeholder = "Your phone number...",
-                        enabled = state.editable.value,
+                        enabled = state.isEditable.value,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         keyboardController = KeyboardActions(
                             onDone = { keyboardController?.hide() })
@@ -245,14 +257,14 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
             ) {
                 TextFieldComponent(
                     text = "UNIVERSITY NAME",
-                    description = state.university.value,
+                    description = state.universityName.value,
                     onValueChange = {
-                        state.university.value = it
+                        state.universityName.value = it
                         //universityNameCheck = validateInput(universityName, "UNIVERSITY NAME")
                     },
-                    passedCheck = state.universityFormatCheck.value,
+                    passedCheck = state.isUniversityNameFormatValid.value,
                     placeholder = "Your university name...",
-                    enabled = state.editable.value,
+                    enabled = state.isEditable.value,
                     keyboardController = KeyboardActions(
                         onDone = { keyboardController?.hide() })
                 )
@@ -273,7 +285,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                         state.selfDescription.value = it
                     },
                     placeholder = "Enter a description about yourself...",
-                    enabled = state.editable.value,
+                    enabled = state.isEditable.value,
                     keyboardController = KeyboardActions(
                         onDone = { keyboardController?.hide() })
                 )
@@ -298,7 +310,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.success_icon),
-                                contentDescription = "Starry night",
+                                contentDescription = "Success",
                                 contentScale = ContentScale.Crop,
                                 alignment = Alignment.CenterStart,
                                 modifier = Modifier
@@ -330,14 +342,24 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                 }
 
             }
-            if (state.revealSubmit.value)
+            if (state.shouldRevealSubmit.value)
                 Button(
                     onClick = {
+                        runBlocking {
+                            withContext(Dispatchers.IO) {
+                                userDao.updateName(Username.value, state.name.value)
+                                userDao.updatePhoneNumber(Username.value, state.phoneNumber.value)
+                                userDao.updateUniversityName(Username.value, state.universityName.value)
+                                userDao.updateSelfDescription(Username.value, state.selfDescription.value)
+
+                            }
+                        }
+
                         viewModel.processIntent(
                             ProfileMviIntents.Submit(
                                 state.name.value,
                                 state.phoneNumber.value,
-                                state.university.value,
+                                state.universityName.value,
                                 state.selfDescription.value
                             )
                         )

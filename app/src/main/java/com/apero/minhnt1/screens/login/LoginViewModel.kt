@@ -2,6 +2,8 @@ package com.apero.minhnt1.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.apero.minhnt1.MainActivity
+import com.apero.minhnt1.Username
 import com.apero.minhnt1.database.user.User
 import com.apero.minhnt1.utility.validateInput
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class LoginViewModel : ViewModel() {
     private val _state = MutableStateFlow<LoginMviState>(LoginMviState())
@@ -44,6 +47,7 @@ class LoginViewModel : ViewModel() {
             if (foundUser.isNotEmpty()) {
                 _state.value.users.add(foundUser[0])
                 _state.value.loginSuccess.value = true
+                Username.value = foundUser[0].username
             }
         }
     }

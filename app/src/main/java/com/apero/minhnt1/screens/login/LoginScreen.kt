@@ -192,7 +192,7 @@ fun LoginScreen(
                         runBlocking {
                             withContext(Dispatchers.IO) {
                                 val retrievedUser =
-                                    userDao.getSpecificUser(
+                                    userDao.getSpecificUserForLogin(
                                         state.username.value,
                                         state.password.value
                                     )

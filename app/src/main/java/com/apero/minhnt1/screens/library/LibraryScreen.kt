@@ -73,6 +73,8 @@ import com.apero.minhnt1.Screen
 import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.database.song.Song
 import com.apero.minhnt1.database.song.SongDao
+import com.apero.minhnt1.utility.convertBitmapToImage
+import com.apero.minhnt1.utility.millisToDuration
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -731,7 +733,7 @@ private fun populateMusicLibrary(
     }
 }
 
-fun getMusicLibrary(songDao: SongDao): SnapshotStateList<Song> {
+private fun getMusicLibrary(songDao: SongDao): SnapshotStateList<Song> {
     val library: MutableList<Song>
     runBlocking {
         withContext(Dispatchers.IO) {
@@ -743,23 +745,7 @@ fun getMusicLibrary(songDao: SongDao): SnapshotStateList<Song> {
     return stateLibrary
 }
 
-fun millisToDuration(duration: Long): String {
-    val format = SimpleDateFormat("mm:ss")
-    return format.format(Date(duration))
 
-}
 
-fun convertBitmapToImage(contentUri: Uri?, context: Context): Bitmap? {
-    var retriever = MediaMetadataRetriever()
-    try {
-        retriever.setDataSource(context, contentUri)
-        var data = retriever.embeddedPicture
-        if (data != null) return BitmapFactory.decodeByteArray(data, 0, data.size)
-    } catch (e: Exception) {
-        Log.e("LibraryScreen", "Unable to convert $contentUri to image")
-    } finally {
-        retriever.release()
-    }
-    return null
-}
+
 

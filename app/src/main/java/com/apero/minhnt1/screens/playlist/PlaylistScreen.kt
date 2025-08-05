@@ -33,11 +33,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,22 +59,35 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
 import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.R
+import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.database.playlist.Playlist
+import com.apero.minhnt1.database.playlist.PlaylistDao
 import com.apero.minhnt1.screens.library.IncomingSong
-import com.apero.minhnt1.screens.library.convertBitmapToImage
-import com.apero.minhnt1.screens.library.millisToDuration
+import com.apero.minhnt1.utility.convertBitmapToImage
+import com.apero.minhnt1.utility.millisToDuration
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 
 @Composable
-fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel()) {
+fun PlaylistScreen(
+    context: Context,
+    viewModel: PlaylistViewModel = viewModel(),
+    isAlreadyLaunched: Boolean
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showAddToPlaylistPopup by remember { mutableStateOf(IncomingSong.showAddToPlaylistPopup) }
     var showPlaylistContents by remember { mutableStateOf(false) }
-    var playlistIndex by remember { mutableStateOf(0) }
+    var playlistIndex by remember { mutableIntStateOf(0) }
     var showCreatePlaylist by remember { mutableStateOf(false) }
+    val playlistDao = AppDatabase.getDatabase(context).playlistDao()
     val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
     dropdownItems.add(DropdownItems("Remove playlist", R.drawable.remove))
     dropdownItems.add(DropdownItems("Rename", R.drawable.pencil))
+
+    state.playlistLibrary = populatePlaylist(playlistDao)
+
     val lazyListState = rememberLazyListState()
     Column {
         Row(
@@ -123,11 +139,9 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                     )
                 }
             }
-        }
-        else if (showPlaylistContents && state.playlistLibrary[playlistIndex].songList.isNotEmpty()) {
-            PlaylistContentScreen(context, state, playlistIndex)
-        }
-        else {
+        } else if (showPlaylistContents) {
+            PlaylistContentScreen(context, state, playlistIndex, playlistDao)
+        } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -140,7 +154,10 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                     val cover = if (state.playlistLibrary[index].songList.isNotEmpty()) remember(
                         state.playlistLibrary[index].songList[0]?.songID
                     ) {
-                        convertBitmapToImage(state.playlistLibrary[index].songList[0]?.cover, context)
+                        convertBitmapToImage(
+                            state.playlistLibrary[index].songList[0]?.cover,
+                            context
+                        )
                     } else null
 
                     val painter = if (cover != null) {
@@ -156,7 +173,8 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                             .padding(8.dp)
                             .clickable {
                                 playlistIndex = index
-                                showPlaylistContents = true },
+                                showPlaylistContents = true
+                            },
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -213,8 +231,14 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                             )
                                         },
                                         onClick = {
-                                            state.playlistLibrary.removeAt(index)
+
                                             isDropdownMenuVisible = false
+                                            runBlocking {
+                                                withContext(Dispatchers.IO) {
+                                                    playlistDao.delete(state.playlistLibrary[index])
+                                                }
+                                            }
+                                            state.playlistLibrary.removeAt(index)
                                         }
                                     )
                                     DropdownMenuItem(
@@ -226,8 +250,10 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                                 tint = Color.White
                                             )
                                         },
-                                        onClick = { state.showRenameDialog.value = true
-                                            isDropdownMenuVisible = false}
+                                        onClick = {
+                                            state.showRenameDialog.value = true
+                                            isDropdownMenuVisible = false
+                                        }
                                     )
                                 }
                             }
@@ -283,6 +309,12 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                 Text("Cancel")
                             }
                             TextButton(onClick = {
+                                runBlocking {
+                                    withContext(Dispatchers.IO) {
+                                        playlistDao.insert(Playlist(name = text))
+                                    }
+                                }
+
                                 state.playlistLibrary.add(Playlist(name = text))
                                 showCreatePlaylist = false
                             }) {
@@ -297,7 +329,8 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
         if (showAddToPlaylistPopup && state.playlistLibrary.isNotEmpty()) {
             Dialog(onDismissRequest = {
                 IncomingSong.showAddToPlaylistPopup = false
-                showAddToPlaylistPopup = false }) {
+                showAddToPlaylistPopup = false
+            }) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -334,9 +367,15 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                         .fillMaxWidth()
                                         .padding(8.dp)
                                         .clickable {
+                                            IncomingSong.Song.inPlaylistID = state.playlistLibrary[index].playlistID
                                             state.playlistLibrary[index].songList.add(IncomingSong.Song)
                                             showAddToPlaylistPopup = false
                                             IncomingSong.showAddToPlaylistPopup = false
+                                            runBlocking {
+                                                withContext(Dispatchers.IO) {
+                                                    playlistDao.update(state.playlistLibrary[index])
+                                                }
+                                            }
                                         },
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -387,7 +426,12 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
 }
 
 @Composable
-fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistIndex: Int) {
+fun PlaylistContentScreen(
+    context: Context,
+    state: PlaylistMviState,
+    playlistIndex: Int,
+    playlistDao: PlaylistDao
+) {
     var playlistNotEmpty by remember { mutableStateOf(true) }
     var playlistContent = state.playlistLibrary[playlistIndex].songList
     val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
@@ -406,7 +450,10 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
             items(playlistContent.size) { index ->
 
                 val cover = remember(state.playlistLibrary[playlistIndex].songList[index]?.songID) {
-                    convertBitmapToImage(state.playlistLibrary[playlistIndex].songList[index]?.cover, context)
+                    convertBitmapToImage(
+                        state.playlistLibrary[playlistIndex].songList[index]?.cover,
+                        context
+                    )
                 }
 
                 val painter = if (cover != null) {
@@ -489,8 +536,14 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
                                     },
                                     onClick = {
                                         state.playlistLibrary[playlistIndex].songList.removeAt(index)
-                                        playlistNotEmpty = state.playlistLibrary[playlistIndex].songList.isNotEmpty()
+                                        playlistNotEmpty =
+                                            state.playlistLibrary[playlistIndex].songList.isNotEmpty()
                                         isDropdownMenuVisible = false
+                                        runBlocking {
+                                            withContext(Dispatchers.IO) {
+                                                playlistDao.update(state.playlistLibrary[playlistIndex])
+                                            }
+                                        }
                                     }
                                 )
 
@@ -540,6 +593,19 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
     }
 }
 
+private fun populatePlaylist(playlistDao: PlaylistDao): SnapshotStateList<Playlist> {
+    var listOfPlaylists: List<Playlist>
+    val stateList = mutableStateListOf<Playlist>()
+    runBlocking {
+        withContext(Dispatchers.IO) {
+            listOfPlaylists = playlistDao.getAll()
+        }
+    }
+    for (playlist in listOfPlaylists) stateList.add(playlist)
+    return stateList
+}
+
+
 @Composable
 fun RenameDialog(
     state: PlaylistMviState,
@@ -584,7 +650,7 @@ fun RenameDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    TextButton(onClick = {state.showRenameDialog.value = false}) {
+                    TextButton(onClick = { state.showRenameDialog.value = false }) {
                         Text("Cancel")
                     }
                     TextButton(onClick = {

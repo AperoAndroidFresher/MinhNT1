@@ -1,6 +1,5 @@
 package com.apero.minhnt1.database.user
 
-import android.graphics.Bitmap
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -14,8 +13,10 @@ interface UserDao {
     suspend fun getAll(): List<User>
 
     @Query("SELECT * FROM user WHERE username = :username AND password = :password")
-    suspend fun getSpecificUser(username: String, password: String): List<User>
+    suspend fun getSpecificUserForLogin(username: String, password: String): List<User>
 
+    @Query("SELECT * FROM user WHERE username = :username")
+    suspend fun getUser(username: String) : User
     @Insert
     suspend fun insert(user: User)
 
@@ -35,7 +36,8 @@ interface UserDao {
     suspend fun updateSelfDescription(username: String, selfDescription: String)
 
     @Query("UPDATE user SET profile_picture = :profilePicture WHERE username = :username")
-    suspend fun updateSelfDescription(username: String, profilePicture: ByteArray?)
+    suspend fun updateProfilePicture(username: String, profilePicture: ByteArray?)
+
 
     @Transaction
     @Query("SELECT * FROM User")

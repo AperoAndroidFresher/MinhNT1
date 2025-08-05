@@ -14,7 +14,7 @@ import com.apero.minhnt1.database.song.SongDao
 import com.apero.minhnt1.database.user.User
 import com.apero.minhnt1.database.user.UserDao
 
-@Database(entities = [User::class, Song::class, Playlist::class, PlaylistSongCrossRef::class], version = 2, exportSchema = false)
+@Database(entities = [User::class, Song::class, Playlist::class, PlaylistSongCrossRef::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao

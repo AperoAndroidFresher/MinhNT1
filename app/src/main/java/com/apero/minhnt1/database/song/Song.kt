@@ -16,5 +16,6 @@ data class Song(
     @ColumnInfo(name = "artist") val artist: String = "Sample",
     @ColumnInfo(name = "duration") val duration: Long = 0,
     @ColumnInfo(name = "path", typeAffinity = 2) val path: String = "",
-    @PrimaryKey val songID: Int = 0
+    @PrimaryKey val songID: Int = 0,
+    @ColumnInfo(name = "inPlaylistID") var inPlaylistID: Int = 0
 )

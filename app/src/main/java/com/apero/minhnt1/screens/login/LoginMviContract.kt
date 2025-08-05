@@ -5,13 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import com.apero.minhnt1.database.user.User
 
 data class LoginMviState(
-    var users: MutableList<User> = mutableListOf(User(username = "a", password = "a")),
+    var users: MutableList<User> = mutableListOf(),
     var username: MutableState<String> = mutableStateOf(""),
     var password: MutableState<String> = mutableStateOf(""),
     var confirmPassword: MutableState<String> = mutableStateOf(""),
     var email: MutableState<String> = mutableStateOf(""),
     var selfDescription: MutableState<String> = mutableStateOf(""),
-    var loginSuccess: MutableState<Boolean> = mutableStateOf(true),
+    var loginSuccess: MutableState<Boolean> = mutableStateOf(false),
     var usernameFormatCheck: MutableState<Boolean> = mutableStateOf(true),
     var passwordFormatCheck: MutableState<Boolean> = mutableStateOf(true),
     var confirmPasswordCheck: MutableState<Boolean> = mutableStateOf(true),

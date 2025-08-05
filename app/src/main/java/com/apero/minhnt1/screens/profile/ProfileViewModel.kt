@@ -46,18 +46,18 @@ class ProfileViewModel : ViewModel() {
         university: String,
         selfDescription: String
     ) {
-        _state.value.nameFormatCheck.value = validateInput(name, "NAME")
-        _state.value.phoneNumberFormatCheck.value = validateInput(phoneNumber, "PHONE NUMBER")
-        _state.value.universityFormatCheck.value = validateInput(university, "UNIVERSITY NAME")
+        _state.value.isNameFormatValid.value = validateInput(name, "NAME")
+        _state.value.isPhoneNumberFormatValid.value = validateInput(phoneNumber, "PHONE NUMBER")
+        _state.value.isUniversityNameFormatValid.value = validateInput(university, "UNIVERSITY NAME")
 
-        if (_state.value.nameFormatCheck.value && _state.value.phoneNumberFormatCheck.value && _state.value.universityFormatCheck.value) {
+        if (_state.value.isNameFormatValid.value && _state.value.isPhoneNumberFormatValid.value && _state.value.isUniversityNameFormatValid.value) {
             _state.value.name.value = name
             _state.value.phoneNumber.value = phoneNumber
-            _state.value.university.value = university
+            _state.value.universityName.value = university
             _state.value.selfDescription.value = selfDescription
-            _state.value.editable.value = false
-            _state.value.editButtonClickable.value = true
-            _state.value.revealSubmit.value = false
+            _state.value.isEditable.value = false
+            _state.value.isEditButtonClickable.value = true
+            _state.value.shouldRevealSubmit.value = false
         }
     }
 

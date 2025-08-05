@@ -173,6 +173,10 @@ data object Library : Screen {
     override val icon = R.drawable.music
 }
 
+object Username {
+    var value = ""
+}
+
 private val destinations: List<Screen> = listOf(Home, Library, Playlist)
 
 data class DropdownItems(val text: String, val icon: Int)

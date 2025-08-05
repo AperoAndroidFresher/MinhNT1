@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 
 data class ProfileMviState(
+
     var name: MutableState<String> = mutableStateOf(""),
     var phoneNumber: MutableState<String> = mutableStateOf(""),
     var universityName: MutableState<String> = mutableStateOf(""),
