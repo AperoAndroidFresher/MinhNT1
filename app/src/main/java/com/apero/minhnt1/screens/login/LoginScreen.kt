@@ -1,5 +1,6 @@
 package com.apero.minhnt1.screens.login
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,13 +40,20 @@ import com.apero.minhnt1.Home
 import com.apero.minhnt1.R
 import com.apero.minhnt1.RememberCheckbox
 import com.apero.minhnt1.Screen
+import com.apero.minhnt1.database.AppDatabase
+import com.apero.minhnt1.database.user.User
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 @Composable
 //@Preview(showBackground = true)
 fun LoginScreen(
+    context: Context,
     viewModel: LoginViewModel,
-    backStack: SnapshotStateList<Screen>
+    backStack: SnapshotStateList<Screen>,
 ) {
+    val userDao = AppDatabase.getDatabase(context = context).userDao()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val usernameIcon = @Composable {
@@ -65,7 +73,9 @@ fun LoginScreen(
     val visibilityIcon = @Composable {
         IconButton(onClick = { state.isPasswordVisible.value = !state.isPasswordVisible.value }) {
             Icon(
-                if (state.isPasswordVisible.value) painterResource(R.drawable.visibility) else painterResource(R.drawable.visibility_off),
+                if (state.isPasswordVisible.value) painterResource(R.drawable.visibility) else painterResource(
+                    R.drawable.visibility_off
+                ),
                 contentDescription = "",
                 tint = Color.DarkGray
             )
@@ -138,7 +148,10 @@ fun LoginScreen(
                 placeholder = { Text("Username") },
                 singleLine = true,
                 supportingText = {
-                    ErrorMessage(passedCheck = state.usernameFormatCheck.value, text = "Invalid format")
+                    ErrorMessage(
+                        passedCheck = state.usernameFormatCheck.value,
+                        text = "Invalid format"
+                    )
                 }
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -176,12 +189,25 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Button(onClick = {
-                    viewModel.processIntent(LoginMviIntents.LogIn(state.username.value, state.password.value))
-                    if (state.loginSuccess.value) {
-                            backStack.add(Home)
-                            backStack.removeRange(0, backStack.indexOf(Home))
+                        runBlocking {
+                            withContext(Dispatchers.IO) {
+                                var retrievedUser =
+                                    userDao.getSpecificUser(
+                                        state.username.value,
+                                        state.password.value
+                                    )
+                                if (retrievedUser.isNotEmpty()) {
+                                    viewModel.processIntent(
+                                        LoginMviIntents.LogIn(
+                                            state.username.value,
+                                            state.password.value
+                                        )
+                                    )
+                                    backStack.add(Home)
+                                    backStack.removeRange(0, backStack.indexOf(Home))
+                                }
+                            }
                         }
-
                 }, modifier = Modifier.width(280.dp)) {
                     Text("Log in")
                 }
@@ -202,7 +228,8 @@ fun LoginScreen(
                     value = state.confirmPassword.value,
                     onValueChange = {
                         state.confirmPassword.value = it
-                        if (state.confirmPassword.value != "") state.confirmPasswordCheck.value = true
+                        if (state.confirmPassword.value != "") state.confirmPasswordCheck.value =
+                            true
 
                     },
                     leadingIcon = passwordIcon,
@@ -241,7 +268,25 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(64.dp))
                 Button(onClick = {
-                    viewModel.processIntent(LoginMviIntents.SignUp(state.username.value, state.password.value, state.confirmPassword.value, state.email.value))
+                    runBlocking {
+                        withContext(Dispatchers.IO) {
+                            userDao.insert(
+                                User(
+                                    username = state.username.value,
+                                    password = state.password.value,
+                                    email = state.email.value
+                                )
+                            )
+                            viewModel.processIntent(
+                                LoginMviIntents.SignUp(
+                                    state.username.value,
+                                    state.password.value,
+                                    state.confirmPassword.value,
+                                    state.email.value
+                                )
+                            )
+                        }
+                    }
                 }, modifier = Modifier.width(280.dp)) {
                     Text("Sign Up")
                 }

@@ -1,5 +1,6 @@
 package com.apero.minhnt1.screens.profile
 
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
@@ -61,17 +62,17 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.apero.minhnt1.R
+import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.ui.theme.AppTheme
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @Composable
-@Preview(showBackground = true)
-fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
+fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
+    val userDao = AppDatabase.getDatabase(context = context).userDao()
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    var imageUri by remember { mutableStateOf("") }
 
     AppTheme(darkTheme = state.isDarkMode.value) {
         Column(
@@ -136,7 +137,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
                     }
                 }
             }
-            var imageUri by remember { mutableStateOf("") }
+
             var image = rememberAsyncImagePainter(
                 ImageRequest.Builder(LocalContext.current)
                     .data(imageUri)
@@ -204,7 +205,6 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
                         description = state.name.value,
                         onValueChange = {
                             state.name.value = it
-                            //nameCheck = validateInput(name, "NAME")
                         },
                         passedCheck = state.nameFormatCheck.value,
                         placeholder = "Your name here...",
@@ -226,7 +226,6 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
                         description = state.phoneNumber.value,
                         onValueChange = {
                             state.phoneNumber.value = it
-                            //phoneNumberCheck = validateInput(phoneNumber, "PHONE NUMBER")
                         },
                         passedCheck = state.phoneNumberFormatCheck.value,
                         placeholder = "Your phone number...",

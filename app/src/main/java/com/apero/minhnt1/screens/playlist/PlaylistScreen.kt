@@ -56,6 +56,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
 import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.R
+import com.apero.minhnt1.database.playlist.Playlist
 import com.apero.minhnt1.screens.library.IncomingSong
 import com.apero.minhnt1.screens.library.convertBitmapToImage
 import com.apero.minhnt1.screens.library.millisToDuration
@@ -123,7 +124,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                 }
             }
         }
-        else if (showPlaylistContents && state.playlistLibrary[playlistIndex].playlist.isNotEmpty()) {
+        else if (showPlaylistContents && state.playlistLibrary[playlistIndex].songList.isNotEmpty()) {
             PlaylistContentScreen(context, state, playlistIndex)
         }
         else {
@@ -136,8 +137,10 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                 state = lazyListState
             ) {
                 itemsIndexed(state.playlistLibrary) { index, item ->
-                    val cover = if (state.playlistLibrary[index].playlist.isNotEmpty()) remember(state.playlistLibrary[index].playlist[0].id) {
-                        convertBitmapToImage(state.playlistLibrary[index].playlist[0].cover, context)
+                    val cover = if (state.playlistLibrary[index].songList.isNotEmpty()) remember(
+                        state.playlistLibrary[index].songList[0]?.songID
+                    ) {
+                        convertBitmapToImage(state.playlistLibrary[index].songList[0]?.cover, context)
                     } else null
 
                     val painter = if (cover != null) {
@@ -177,7 +180,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                 color = Color.White
                             )
                             Text(
-                                text = "${item.playlist.size} songs",
+                                text = "${item.songList.size} songs",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Gray
@@ -280,7 +283,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                 Text("Cancel")
                             }
                             TextButton(onClick = {
-                                state.playlistLibrary.add(Playlist(text))
+                                state.playlistLibrary.add(Playlist(name = text))
                                 showCreatePlaylist = false
                             }) {
                                 Text("Create", color = MaterialTheme.colorScheme.primary)
@@ -331,7 +334,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                         .fillMaxWidth()
                                         .padding(8.dp)
                                         .clickable {
-                                            state.playlistLibrary[index].playlist.add(IncomingSong.Song)
+                                            state.playlistLibrary[index].songList.add(IncomingSong.Song)
                                             showAddToPlaylistPopup = false
                                             IncomingSong.showAddToPlaylistPopup = false
                                         },
@@ -358,7 +361,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
                                             color = Color.White
                                         )
                                         Text(
-                                            text = "${item.playlist.size} songs",
+                                            text = "${item.songList.size} songs",
                                             style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.Gray
@@ -386,7 +389,7 @@ fun PlaylistScreen(context: Context, viewModel: PlaylistViewModel = viewModel())
 @Composable
 fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistIndex: Int) {
     var playlistNotEmpty by remember { mutableStateOf(true) }
-    var playlistContent = state.playlistLibrary[playlistIndex].playlist
+    var playlistContent = state.playlistLibrary[playlistIndex].songList
     val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
     dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
     dropdownItems.add(DropdownItems("Share", R.drawable.share))
@@ -402,8 +405,8 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
         ) {
             items(playlistContent.size) { index ->
 
-                val cover = remember(state.playlistLibrary[playlistIndex].playlist[index].id) {
-                    convertBitmapToImage(state.playlistLibrary[playlistIndex].playlist[index].cover, context)
+                val cover = remember(state.playlistLibrary[playlistIndex].songList[index]?.songID) {
+                    convertBitmapToImage(state.playlistLibrary[playlistIndex].songList[index]?.cover, context)
                 }
 
                 val painter = if (cover != null) {
@@ -434,13 +437,13 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            state.playlistLibrary[playlistIndex].playlist[index].title,
+                            state.playlistLibrary[playlistIndex].songList[index]?.title!!,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            state.playlistLibrary[playlistIndex].playlist[index].artist,
+                            state.playlistLibrary[playlistIndex].songList[index]?.artist!!,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = Color.Gray
@@ -448,7 +451,7 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
                     }
                     Text(
                         millisToDuration(
-                            state.playlistLibrary[playlistIndex].playlist[index].duration
+                            state.playlistLibrary[playlistIndex].songList[index]?.duration!!
                         ),
                         modifier = Modifier.weight(0.15f),
                         style = MaterialTheme.typography.bodyLarge,
@@ -485,8 +488,8 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
                                         )
                                     },
                                     onClick = {
-                                        state.playlistLibrary[playlistIndex].playlist.removeAt(index)
-                                        playlistNotEmpty = state.playlistLibrary[playlistIndex].playlist.isNotEmpty()
+                                        state.playlistLibrary[playlistIndex].songList.removeAt(index)
+                                        playlistNotEmpty = state.playlistLibrary[playlistIndex].songList.isNotEmpty()
                                         isDropdownMenuVisible = false
                                     }
                                 )
@@ -505,7 +508,7 @@ fun PlaylistContentScreen(context: Context, state: PlaylistMviState, playlistInd
                                             action = Intent.ACTION_SEND
                                             putExtra(
                                                 Intent.EXTRA_STREAM,
-                                                state.playlistLibrary[playlistIndex].playlist[index].cover
+                                                state.playlistLibrary[playlistIndex].songList[index]?.cover
                                             )
                                             type = "audio/*"
                                         }

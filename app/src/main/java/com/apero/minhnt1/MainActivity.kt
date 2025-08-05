@@ -33,42 +33,33 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import androidx.room.Room
+import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.screens.HomeScreen
 import com.apero.minhnt1.screens.playlist.PlaylistScreen
 import com.apero.minhnt1.screens.login.LoginScreen
 import com.apero.minhnt1.screens.login.LoginViewModel
 import com.apero.minhnt1.screens.library.LibraryScreen
-import com.apero.minhnt1.screens.library.Song
 import com.apero.minhnt1.screens.profile.ProfileScreen
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 class MainActivity : ComponentActivity() {
+
     private val viewModel: LoginViewModel by viewModels()
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
-//        val requestPermissionLauncher =
-//            registerForActivityResult(RequestPermission()
-//            ) { isGranted: Boolean ->
-//                if (isGranted) {
-//                    // Permission is granted. Continue the action or workflow in your
-//                    // app.
-//                } else {
-//                    // Explain to the user that the feature is unavailable because the
-//                    // feature requires a permission that the user has denied. At the
-//                    // same time, respect the user's decision. Don't link to system
-//                    // settings in an effort to convince the user to change their
-//                    // decision.
-//                }
-//            }
+
         var keepSplashScreen = true
         super.onCreate(savedInstanceState)
         splashscreen.setKeepOnScreenCondition { keepSplashScreen }
         lifecycleScope.launch {
-            delay(2000)
+            delay(1000)
             keepSplashScreen = false
         }
         enableEdgeToEdge()
@@ -110,15 +101,15 @@ class MainActivity : ComponentActivity() {
                         onBack = { backStack.removeLastOrNull() },
                         entryProvider = entryProvider {
                             entry<Login> {
-                                LoginScreen(viewModel = viewModel, backStack = backStack)
+                                LoginScreen(viewModel = viewModel, backStack = backStack, context = applicationContext)
                             }
                             entry<Home> {
                                 HomeScreen(backStack)
                             }
                             entry<Information> {
-                                ProfileScreen()
+                                ProfileScreen(context = applicationContext)
                             }
-                            entry<Library> {key ->
+                            entry<Library> { key ->
                                 LibraryScreen(applicationContext, backStack = backStack) {
 
                                 }
@@ -167,23 +158,7 @@ data object Library : Screen {
 
 private val destinations: List<Screen> = listOf(Home, Library, Playlist)
 
-
-
-
-
-
-
 data class DropdownItems(val text: String, val icon: Int)
-
-data class User(
-    var username: String = "",
-    var password: String = "",
-    var email: String = "",
-    var name: String = "",
-    var phoneNumber: String = "",
-    var universityName: String = "",
-    var selfDescription: String = ""
-)
 
 @Composable
 fun RememberCheckbox(

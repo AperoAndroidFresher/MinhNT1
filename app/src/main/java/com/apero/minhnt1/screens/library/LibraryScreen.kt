@@ -61,7 +61,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
@@ -69,6 +68,7 @@ import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.Playlist
 import com.apero.minhnt1.R
 import com.apero.minhnt1.Screen
+import com.apero.minhnt1.database.song.Song
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -85,6 +85,7 @@ object IncomingSong {
 @Composable
 //@Preview(showBackground = true)
 fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), backStack: SnapshotStateList<Screen>, onClick: () -> Unit = {}) {
+
     val resolver = context.contentResolver
     val state by viewModel.state.collectAsStateWithLifecycle()
     var isList by remember { mutableStateOf(false) }
@@ -189,7 +190,7 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                         counter++
                         Log.d("ListItem Count", counter.toString())
 
-                        val cover = remember(state.songLibrary[index].id) {
+                        val cover = remember(state.songLibrary[index].songID) {
                             convertBitmapToImage(state.songLibrary[index].cover, context)
                         }
 
@@ -340,7 +341,7 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
 //                )
                         counter++
                         Log.d("LVG Count", counter.toString())
-                        val cover = remember(state.songLibrary[index].id) {
+                        val cover = remember(state.songLibrary[index].songID) {
                             convertBitmapToImage(state.songLibrary[index].cover, context)
                         }
 
@@ -673,7 +674,7 @@ private fun populateMusicLibrary(
                             duration = duration,
                             path = path,
                             cover = contentUri,
-                            id = id
+                            songID = id.toInt()
                         )
                     )
                 } while (cursor.moveToNext())
@@ -691,7 +692,7 @@ fun millisToDuration(duration: Long): String {
 
 }
 
-fun convertBitmapToImage(contentUri: Uri, context: Context): Bitmap? {
+fun convertBitmapToImage(contentUri: Uri?, context: Context): Bitmap? {
     var retriever = MediaMetadataRetriever()
     try {
         retriever.setDataSource(context, contentUri)
@@ -705,11 +706,3 @@ fun convertBitmapToImage(contentUri: Uri, context: Context): Bitmap? {
     return null
 }
 
-data class Song(
-    val cover: Uri = "".toUri(),
-    val title: String = "Sample",
-    val artist: String = "Sample",
-    val duration: Long = 0,
-    val path: Any = "",
-    val id: String = ""
-)

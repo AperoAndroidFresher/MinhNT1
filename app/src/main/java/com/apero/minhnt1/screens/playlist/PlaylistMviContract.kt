@@ -5,8 +5,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.apero.minhnt1.R
-import com.apero.minhnt1.screens.library.Song
+import com.apero.minhnt1.database.playlist.Playlist
 
 data class PlaylistMviState(
     var playlistLibrary: SnapshotStateList<Playlist> = mutableStateListOf(),
@@ -16,7 +15,6 @@ data class PlaylistMviState(
     var retriever: MutableState<MediaMetadataRetriever> = mutableStateOf(MediaMetadataRetriever())
 )
 
-data class Playlist(var name: String, var playlistCover: Int = R.drawable.cover_1, var playlist: SnapshotStateList<Song> = mutableStateListOf())
 
 sealed interface PlaylistMviIntents {
     data object SwitchView : PlaylistMviIntents
