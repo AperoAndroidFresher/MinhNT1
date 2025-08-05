@@ -191,7 +191,7 @@ fun LoginScreen(
                 Button(onClick = {
                         runBlocking {
                             withContext(Dispatchers.IO) {
-                                var retrievedUser =
+                                val retrievedUser =
                                     userDao.getSpecificUser(
                                         state.username.value,
                                         state.password.value

@@ -14,7 +14,7 @@ interface UserDao {
     suspend fun getAll(): List<User>
 
     @Query("SELECT * FROM user WHERE username = :username AND password = :password")
-    suspend fun getSpecificUser(username: String, password: String) : List<User>
+    suspend fun getSpecificUser(username: String, password: String): List<User>
 
     @Insert
     suspend fun insert(user: User)
@@ -37,7 +37,7 @@ interface UserDao {
     @Query("UPDATE user SET profile_picture = :profilePicture WHERE username = :username")
     suspend fun updateSelfDescription(username: String, profilePicture: ByteArray?)
 
-//    @Transaction
-//    @Query("SELECT * FROM User")
-//    fun getUsersWithPlaylists(): List<UserWithPlaylists>
+    @Transaction
+    @Query("SELECT * FROM User")
+    fun getUsersWithPlaylists(): List<UserWithPlaylists>
 }

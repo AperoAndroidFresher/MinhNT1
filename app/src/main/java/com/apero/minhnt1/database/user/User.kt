@@ -53,11 +53,11 @@ data class User(
     }
 }
 
-//data class UserWithPlaylists(
-//    @Embedded val user: User,
-//    @Relation(
-//        parentColumn = "user_id",
-//        entityColumn = "creator_id"
-//    )
-//    val playlists: List<Playlist>
-//)
+data class UserWithPlaylists(
+    @Embedded val user: User,
+    @Relation(
+        parentColumn = "user_id",
+        entityColumn = "creator_id"
+    )
+    val playlists: List<Playlist>
+)

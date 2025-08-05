@@ -18,7 +18,7 @@ interface PlaylistDao {
     @Update
     suspend fun update(playlist: Playlist)
 
-//    @Transaction
-//    @Query("SELECT * FROM Playlist")
-//    fun getPlaylistsWithSongs(): List<PlaylistWithSongs>
+    @Transaction
+    @Query("SELECT * FROM Playlist")
+    fun getPlaylistsWithSongs(): List<PlaylistWithSongs>
 }

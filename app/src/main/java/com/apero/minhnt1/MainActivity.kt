@@ -33,8 +33,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import androidx.room.Room
-import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.screens.HomeScreen
 import com.apero.minhnt1.screens.playlist.PlaylistScreen
 import com.apero.minhnt1.screens.login.LoginScreen
@@ -54,6 +52,12 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
+
+        // Boolean vars to identify if a screen was already launched,
+        // to triggering on-launch functions
+        val isHomeAlreadyLaunched = false
+        var isLibraryAlreadyLaunched = false
+        var isPlaylistAlreadyLaunched = false
 
         var keepSplashScreen = true
         super.onCreate(savedInstanceState)
@@ -101,7 +105,11 @@ class MainActivity : ComponentActivity() {
                         onBack = { backStack.removeLastOrNull() },
                         entryProvider = entryProvider {
                             entry<Login> {
-                                LoginScreen(viewModel = viewModel, backStack = backStack, context = applicationContext)
+                                LoginScreen(
+                                    viewModel = viewModel,
+                                    backStack = backStack,
+                                    context = applicationContext
+                                )
                             }
                             entry<Home> {
                                 HomeScreen(backStack)
@@ -110,12 +118,21 @@ class MainActivity : ComponentActivity() {
                                 ProfileScreen(context = applicationContext)
                             }
                             entry<Library> { key ->
-                                LibraryScreen(applicationContext, backStack = backStack) {
 
+                                LibraryScreen(
+                                    applicationContext,
+                                    backStack = backStack,
+                                    isAlreadyLaunched = isLibraryAlreadyLaunched
+                                )
+                                if (!isLibraryAlreadyLaunched) {
+                                    isLibraryAlreadyLaunched = true
                                 }
                             }
                             entry<Playlist> {
-                                PlaylistScreen(applicationContext)
+                                PlaylistScreen(applicationContext, isAlreadyLaunched = isPlaylistAlreadyLaunched)
+                                if (!isPlaylistAlreadyLaunched) {
+                                    isPlaylistAlreadyLaunched = true
+                                }
                             }
                         }
                     )

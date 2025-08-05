@@ -11,7 +11,7 @@ data class LoginMviState(
     var confirmPassword: MutableState<String> = mutableStateOf(""),
     var email: MutableState<String> = mutableStateOf(""),
     var selfDescription: MutableState<String> = mutableStateOf(""),
-    var loginSuccess: MutableState<Boolean> = mutableStateOf(false),
+    var loginSuccess: MutableState<Boolean> = mutableStateOf(true),
     var usernameFormatCheck: MutableState<Boolean> = mutableStateOf(true),
     var passwordFormatCheck: MutableState<Boolean> = mutableStateOf(true),
     var confirmPasswordCheck: MutableState<Boolean> = mutableStateOf(true),

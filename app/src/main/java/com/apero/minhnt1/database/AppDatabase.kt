@@ -7,13 +7,14 @@ import androidx.room.TypeConverters
 import android.content.Context
 import com.apero.minhnt1.database.playlist.Playlist
 import com.apero.minhnt1.database.playlist.PlaylistDao
+import com.apero.minhnt1.database.playlist.PlaylistSongCrossRef
 //import com.apero.minhnt1.database.playlist.PlaylistSongCrossRef
 import com.apero.minhnt1.database.song.Song
 import com.apero.minhnt1.database.song.SongDao
 import com.apero.minhnt1.database.user.User
 import com.apero.minhnt1.database.user.UserDao
 
-@Database(entities = [User::class, Song::class, Playlist::class], version = 1, exportSchema = false)
+@Database(entities = [User::class, Song::class, Playlist::class, PlaylistSongCrossRef::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
@@ -31,23 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
                         klass = AppDatabase::class.java,
                         name = "AppDatabase"
                     ).fallbackToDestructiveMigration(true)
-                //.allowMainThreadQueries()
                 .build()
-
-//        @Volatile
-//        private var INSTANCE: AppDatabase? = null
-//        fun getInstance(context: Context): AppDatabase{
-//            return INSTANCE ?: synchronized(this) {
-//                INSTANCE ?: Room.databaseBuilder(
-//                    context.applicationContext,
-//                    AppDatabase::class.java, "app_database"
-//                )
-//                    .fallbackToDestructiveMigration()
-//                    .build()
-//                    .also { INSTANCE = it }
-//            }
-//
-//        }
 
     }
 }
