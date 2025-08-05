@@ -248,10 +248,10 @@ fun LoginScreen(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
-                    value = state.email.value,
+                    value = state.emailAddress.value,
                     onValueChange = {
-                        state.email.value = it
-                        if (state.email.value != "") state.emailFormatCheck.value = true
+                        state.emailAddress.value = it
+                        if (state.emailAddress.value != "") state.emailFormatCheck.value = true
                     },
                     leadingIcon = emailIcon,
                     shape = RoundedCornerShape(25),
@@ -274,7 +274,7 @@ fun LoginScreen(
                                 User(
                                     username = state.username.value,
                                     password = state.password.value,
-                                    email = state.email.value
+                                    email = state.emailAddress.value
                                 )
                             )
                             viewModel.processIntent(
@@ -282,7 +282,7 @@ fun LoginScreen(
                                     state.username.value,
                                     state.password.value,
                                     state.confirmPassword.value,
-                                    state.email.value
+                                    state.emailAddress.value
                                 )
                             )
                         }
