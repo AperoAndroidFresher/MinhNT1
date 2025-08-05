@@ -9,7 +9,7 @@ data class LoginMviState(
     var username: MutableState<String> = mutableStateOf(""),
     var password: MutableState<String> = mutableStateOf(""),
     var confirmPassword: MutableState<String> = mutableStateOf(""),
-    var email: MutableState<String> = mutableStateOf(""),
+    var emailAddress: MutableState<String> = mutableStateOf(""),
     var selfDescription: MutableState<String> = mutableStateOf(""),
     var loginSuccess: MutableState<Boolean> = mutableStateOf(false),
     var usernameFormatCheck: MutableState<Boolean> = mutableStateOf(true),

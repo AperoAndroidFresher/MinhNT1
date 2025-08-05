@@ -2,7 +2,6 @@ package com.apero.minhnt1.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.apero.minhnt1.MainActivity
 import com.apero.minhnt1.Username
 import com.apero.minhnt1.database.user.User
 import com.apero.minhnt1.utility.validateInput
@@ -13,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class LoginViewModel : ViewModel() {
     private val _state = MutableStateFlow<LoginMviState>(LoginMviState())
@@ -62,7 +60,7 @@ class LoginViewModel : ViewModel() {
             _state.value.users.add(User(username = username, password = password, email = email))
             _state.value.username.value = ""
             _state.value.password.value = ""
-            _state.value.email.value = ""
+            _state.value.emailAddress.value = ""
             _state.value.isSignupScreen.value = false
 
         } else {
@@ -74,7 +72,7 @@ class LoginViewModel : ViewModel() {
                 _state.value.confirmPassword.value = ""
             }
             if (emailFormatCheck) {
-                _state.value.email.value = ""
+                _state.value.emailAddress.value = ""
             }
         }
     }
