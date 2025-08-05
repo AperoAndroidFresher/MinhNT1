@@ -6,16 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 data class ProfileMviState(
     var name: MutableState<String> = mutableStateOf(""),
     var phoneNumber: MutableState<String> = mutableStateOf(""),
-    var university: MutableState<String> = mutableStateOf(""),
+    var universityName: MutableState<String> = mutableStateOf(""),
     var selfDescription: MutableState<String> = mutableStateOf(""),
     var isDarkMode: MutableState<Boolean> = mutableStateOf(true),
-    var editable: MutableState<Boolean> = mutableStateOf(false),
-    var editButtonClickable: MutableState<Boolean> = mutableStateOf(true),
-    var revealSubmit: MutableState<Boolean> = mutableStateOf(false),
-    var nameFormatCheck: MutableState<Boolean> = mutableStateOf(true),
-    var phoneNumberFormatCheck: MutableState<Boolean> = mutableStateOf(true),
-    var universityFormatCheck: MutableState<Boolean> = mutableStateOf(true),
-    var showAlert: MutableState<Boolean> = mutableStateOf(false)
+    var isEditable: MutableState<Boolean> = mutableStateOf(false),
+    var isEditButtonClickable: MutableState<Boolean> = mutableStateOf(true),
+    var shouldRevealSubmit: MutableState<Boolean> = mutableStateOf(false),
+    var isNameFormatValid: MutableState<Boolean> = mutableStateOf(true),
+    var isPhoneNumberFormatValid: MutableState<Boolean> = mutableStateOf(true),
+    var isUniversityNameFormatValid: MutableState<Boolean> = mutableStateOf(true),
+    var shouldShowAlert: MutableState<Boolean> = mutableStateOf(false)
 )
 
 sealed interface ProfileMviIntents {
