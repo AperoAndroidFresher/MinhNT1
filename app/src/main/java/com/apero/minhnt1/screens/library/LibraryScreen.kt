@@ -32,7 +32,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -61,7 +63,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
@@ -69,10 +70,18 @@ import com.apero.minhnt1.DropdownItems
 import com.apero.minhnt1.Playlist
 import com.apero.minhnt1.R
 import com.apero.minhnt1.Screen
+import com.apero.minhnt1.database.AppDatabase
+import com.apero.minhnt1.database.song.Song
+import com.apero.minhnt1.database.song.SongDao
+import com.apero.minhnt1.utility.convertBitmapToImage
+import com.apero.minhnt1.utility.millisToDuration
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.util.Date
 
 object IncomingSong {
@@ -84,29 +93,35 @@ object IncomingSong {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 //@Preview(showBackground = true)
-fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), backStack: SnapshotStateList<Screen>, onClick: () -> Unit = {}) {
+fun LibraryScreen(
+    context: Context,
+    viewModel: LibraryViewModel = viewModel(),
+    backStack: SnapshotStateList<Screen>,
+    isAlreadyLaunched: Boolean,
+    onClick: () -> Unit = {}
+) {
+    val songDao = AppDatabase.getDatabase(context = context).songDao()
     val resolver = context.contentResolver
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var isList by remember { mutableStateOf(false) }
 
+    var isList by remember { mutableStateOf(false) }
     val mediaPermission = rememberPermissionState(Manifest.permission.READ_MEDIA_AUDIO)
     if (mediaPermission.status.isGranted) {
-        var playlist = remember { mutableStateListOf<Song>() }
         var isLocal by remember { mutableStateOf(true) }
-        state.songLibrary.clear()
-
-
-        state.songLibrary = populateMusicLibrary(resolver, playlist)
+        //var library = remember { mutableStateListOf<Song>() }
+        if (!isAlreadyLaunched) {
+            populateMusicLibrary(resolver, songDao)
+            state.songLibrary = getMusicLibrary(songDao)
+        }
 
         val lazyListState = rememberLazyListState()
         val lazyGridState = rememberLazyGridState()
-
         val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
         dropdownItems.add(DropdownItems("Add to playlist", R.drawable.add_song))
         dropdownItems.add(DropdownItems("Remove from playlist", R.drawable.remove))
         dropdownItems.add(DropdownItems("Share", R.drawable.share))
 
-        Column{
+        Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,7 +160,9 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp).background(Color.Black))
+            Spacer(Modifier
+                .height(10.dp)
+                .background(Color.Black))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -153,22 +170,28 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Button(onClick = { isLocal = true }, modifier = Modifier.size(120.dp, 40.dp),
+                Button(
+                    onClick = { isLocal = true }, modifier = Modifier.size(120.dp, 40.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if(isLocal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
-                        contentColor = if(isLocal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
-                    )) {
+                        containerColor = if (isLocal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
+                        contentColor = if (isLocal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
+                    )
+                ) {
                     Text("Local")
                 }
-                Button(onClick = { isLocal = false }, modifier = Modifier.size(120.dp, 40.dp),
+                Button(
+                    onClick = { isLocal = false }, modifier = Modifier.size(120.dp, 40.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if(!isLocal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
-                        contentColor = if(!isLocal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
-                    )) {
+                        containerColor = if (!isLocal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
+                        contentColor = if (!isLocal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
+                    )
+                ) {
                     Text("Remote")
                 }
             }
-            Spacer(Modifier.height(10.dp).background(Color.Black))
+            Spacer(Modifier
+                .height(10.dp)
+                .background(Color.Black))
             if (state.isList.value) {
                 LazyColumn(
                     modifier = Modifier
@@ -179,7 +202,7 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                     state = lazyListState
                 ) {
                     var counter = 0
-                    items(state.songLibrary.size) { index ->
+                    itemsIndexed(state.songLibrary) { index, item ->
 //                SongEntry(
 //                    cover = state.playlist[index].cover,
 //                    title = state.playlist[index].title,
@@ -189,7 +212,7 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                         counter++
                         Log.d("ListItem Count", counter.toString())
 
-                        val cover = remember(state.songLibrary[index].id) {
+                        val cover = remember(state.songLibrary[index].songID) {
                             convertBitmapToImage(state.songLibrary[index].cover, context)
                         }
 
@@ -279,24 +302,39 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                                             }
                                         )
                                         DropdownMenuItem(
-                                            text = { Text(dropdownItems[1].text, color = Color.White) },
+                                            text = {
+                                                Text(
+                                                    dropdownItems[1].text,
+                                                    color = Color.White
+                                                )
+                                            },
                                             leadingIcon = {
                                                 Icon(
-                                                    painter = painterResource(id = dropdownItems[0].icon),
+                                                    painter = painterResource(id = dropdownItems[1].icon),
                                                     contentDescription = "Remove",
                                                     tint = Color.White
                                                 )
                                             },
                                             onClick = {
+                                                runBlocking {
+                                                    withContext(Dispatchers.IO) {
+                                                        songDao.delete(item)
+                                                    }
+                                                }
                                                 state.songLibrary.removeAt(index)
                                                 isDropdownMenuVisible = false
                                             }
                                         )
                                         DropdownMenuItem(
-                                            text = { Text(dropdownItems[2].text, color = Color.Gray) },
+                                            text = {
+                                                Text(
+                                                    dropdownItems[2].text,
+                                                    color = Color.White
+                                                )
+                                            },
                                             leadingIcon = {
                                                 Icon(
-                                                    painter = painterResource(id = dropdownItems[1].icon),
+                                                    painter = painterResource(id = dropdownItems[2].icon),
                                                     contentDescription = "Share",
                                                     tint = Color.White
                                                 )
@@ -304,12 +342,16 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                                             onClick = {
                                                 val sendIntent: Intent = Intent().apply {
                                                     action = Intent.ACTION_SEND
-                                                    putExtra(Intent.EXTRA_STREAM, state.songLibrary[index].cover)
+                                                    putExtra(
+                                                        Intent.EXTRA_STREAM,
+                                                        state.songLibrary[index].cover
+                                                    )
                                                     type = "audio/*"
                                                 }
                                                 sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-                                                val shareIntent = Intent.createChooser(sendIntent, null)
+                                                val shareIntent =
+                                                    Intent.createChooser(sendIntent, null)
                                                 shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                 startActivity(context, shareIntent, null)
                                             }
@@ -331,7 +373,7 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     var counter = 0
-                    items(state.songLibrary.size) { index ->
+                    itemsIndexed(state.songLibrary) { index, item ->
 //                SongEntryVertical(
 //                    cover = state.playlist[index].cover,
 //                    title = state.playlist[index].title,
@@ -340,7 +382,7 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
 //                )
                         counter++
                         Log.d("LVG Count", counter.toString())
-                        val cover = remember(state.songLibrary[index].id) {
+                        val cover = remember(state.songLibrary[index].songID) {
                             convertBitmapToImage(state.songLibrary[index].cover, context)
                         }
 
@@ -381,7 +423,9 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                                             )
                                             DropdownMenu(
                                                 expanded = isDropdownMenuVisible,
-                                                onDismissRequest = { isDropdownMenuVisible = false },
+                                                onDismissRequest = {
+                                                    isDropdownMenuVisible = false
+                                                },
                                                 modifier = Modifier.background(Black)
                                             ) {
                                                 DropdownMenuItem(
@@ -420,6 +464,11 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                                                         )
                                                     },
                                                     onClick = {
+                                                        runBlocking {
+                                                            withContext(Dispatchers.IO) {
+                                                                songDao.delete(item)
+                                                            }
+                                                        }
                                                         state.songLibrary.removeAt(index)
                                                         isDropdownMenuVisible = false
                                                     }
@@ -441,11 +490,15 @@ fun LibraryScreen(context: Context, viewModel: LibraryViewModel = viewModel(), b
                                                     onClick = {
                                                         val sendIntent: Intent = Intent().apply {
                                                             action = Intent.ACTION_SEND
-                                                            putExtra(Intent.EXTRA_STREAM, state.songLibrary[index].cover)
+                                                            putExtra(
+                                                                Intent.EXTRA_STREAM,
+                                                                state.songLibrary[index].cover
+                                                            )
                                                             type = "audio/*"
                                                         }
                                                         sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                        val shareIntent = Intent.createChooser(sendIntent, null)
+                                                        val shareIntent =
+                                                            Intent.createChooser(sendIntent, null)
                                                         shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                                         startActivity(context, shareIntent, null)
                                                     }
@@ -626,9 +679,9 @@ fun SongEntryVertical(
 
 private fun populateMusicLibrary(
     resolver: ContentResolver?,
-    library: SnapshotStateList<Song>
-): SnapshotStateList<Song> {
-    var uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+    songDao: SongDao
+) {
+    val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
     val projection = arrayOf(
         MediaStore.Audio.Media._ID,
         MediaStore.Audio.Media.TITLE,
@@ -641,13 +694,10 @@ private fun populateMusicLibrary(
         "${MediaStore.Audio.Media.IS_MUSIC} != 0"
     val cursor = resolver?.query(uri, projection, selection, null, null)
     cursor?.use {
-
-        //val idColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
         when {
             !cursor.moveToFirst() -> {
                 Log.e("LibraryScreen", "No media found")
             }
-
             else -> {
                 val idColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
                 val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
@@ -664,52 +714,38 @@ private fun populateMusicLibrary(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                         it.getString(idColumn).toLong()
                     )
-                    //var data = retriever.embeddedPicture
-                    //val cover = BitmapFactory.decodeByteArray(data, 0, data!!.size).asImage()
-                    library.add(
-                        Song(
-                            title = title,
-                            artist = artist,
-                            duration = duration,
-                            path = path,
-                            cover = contentUri,
-                            id = id
-                        )
+                    val newSong = Song(
+                        title = title,
+                        artist = artist,
+                        duration = duration,
+                        path = path,
+                        cover = contentUri,
+                        songID = id.toInt()
                     )
+                    runBlocking {
+                        withContext(Dispatchers.IO) {
+                            songDao.insert(newSong)
+                        }
+                    }
                 } while (cursor.moveToNext())
             }
         }
-
     }
-    return library
-
 }
 
-fun millisToDuration(duration: Long): String {
-    val format = SimpleDateFormat("mm:ss")
-    return format.format(Date(duration))
-
-}
-
-fun convertBitmapToImage(contentUri: Uri, context: Context): Bitmap? {
-    var retriever = MediaMetadataRetriever()
-    try {
-        retriever.setDataSource(context, contentUri)
-        var data = retriever.embeddedPicture
-        if (data != null) return BitmapFactory.decodeByteArray(data, 0, data.size)
-    } catch (e: Exception) {
-
-    } finally {
-        retriever.release()
+private fun getMusicLibrary(songDao: SongDao): SnapshotStateList<Song> {
+    val library: MutableList<Song>
+    runBlocking {
+        withContext(Dispatchers.IO) {
+            library = songDao.getAll()
+        }
     }
-    return null
+    val stateLibrary = mutableStateListOf<Song>()
+    for (song in library) stateLibrary.add(song)
+    return stateLibrary
 }
 
-data class Song(
-    val cover: Uri = "".toUri(),
-    val title: String = "Sample",
-    val artist: String = "Sample",
-    val duration: Long = 0,
-    val path: Any = "",
-    val id: String = ""
-)
+
+
+
+

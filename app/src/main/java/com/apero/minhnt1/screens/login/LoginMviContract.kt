@@ -2,10 +2,10 @@ package com.apero.minhnt1.screens.login
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import com.apero.minhnt1.User
+import com.apero.minhnt1.database.user.User
 
 data class LoginMviState(
-    var users: MutableList<User> = mutableListOf(User(username = "a", password = "a")),
+    var users: MutableList<User> = mutableListOf(),
     var username: MutableState<String> = mutableStateOf(""),
     var password: MutableState<String> = mutableStateOf(""),
     var confirmPassword: MutableState<String> = mutableStateOf(""),
