@@ -349,8 +349,14 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel(), context: Context) {
                             withContext(Dispatchers.IO) {
                                 userDao.updateName(Username.value, state.name.value)
                                 userDao.updatePhoneNumber(Username.value, state.phoneNumber.value)
-                                userDao.updateUniversityName(Username.value, state.universityName.value)
-                                userDao.updateSelfDescription(Username.value, state.selfDescription.value)
+                                userDao.updateUniversityName(
+                                    Username.value,
+                                    state.universityName.value
+                                )
+                                userDao.updateSelfDescription(
+                                    Username.value,
+                                    state.selfDescription.value
+                                )
 
                             }
                         }

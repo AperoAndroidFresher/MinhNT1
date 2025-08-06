@@ -1,7 +1,5 @@
 package com.apero.minhnt1.database.playlist
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity

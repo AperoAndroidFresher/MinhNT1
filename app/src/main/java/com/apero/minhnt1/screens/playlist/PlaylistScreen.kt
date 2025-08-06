@@ -33,7 +33,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -114,7 +113,7 @@ fun PlaylistScreen(
                     .fillMaxSize()
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .background(Color.Black)
+                    .background(Black)
                     .padding(64.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -342,7 +341,6 @@ fun PlaylistScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(top = 20.dp)
                     ) {
-                        var text by remember { mutableStateOf("") }
                         Text(
                             text = "Choose Playlist",
                             modifier = Modifier
@@ -367,7 +365,8 @@ fun PlaylistScreen(
                                         .fillMaxWidth()
                                         .padding(8.dp)
                                         .clickable {
-                                            IncomingSong.Song.inPlaylistID = state.playlistLibrary[index].playlistID
+                                            IncomingSong.Song.inPlaylistID =
+                                                state.playlistLibrary[index].playlistID
                                             state.playlistLibrary[index].songList.add(IncomingSong.Song)
                                             showAddToPlaylistPopup = false
                                             IncomingSong.showAddToPlaylistPopup = false

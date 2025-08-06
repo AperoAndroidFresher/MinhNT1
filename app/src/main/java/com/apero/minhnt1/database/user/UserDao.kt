@@ -16,7 +16,8 @@ interface UserDao {
     suspend fun getSpecificUserForLogin(username: String, password: String): List<User>
 
     @Query("SELECT * FROM user WHERE username = :username")
-    suspend fun getUser(username: String) : User
+    suspend fun getUser(username: String): User
+
     @Insert
     suspend fun insert(user: User)
 

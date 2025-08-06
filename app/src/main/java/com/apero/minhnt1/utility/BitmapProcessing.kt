@@ -21,7 +21,7 @@ fun convertBitmapToImage(contentUri: Uri?, context: Context): Bitmap? {
     return null
 }
 
-fun getImageAsByteArray(contentUri: Uri?, context: Context) : ByteArray? {
+fun getImageAsByteArray(contentUri: Uri?, context: Context): ByteArray? {
     var retriever = MediaMetadataRetriever()
     try {
         retriever.setDataSource(context, contentUri)
