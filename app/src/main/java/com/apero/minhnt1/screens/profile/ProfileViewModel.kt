@@ -48,7 +48,8 @@ class ProfileViewModel : ViewModel() {
     ) {
         _state.value.isNameFormatValid.value = validateInput(name, "NAME")
         _state.value.isPhoneNumberFormatValid.value = validateInput(phoneNumber, "PHONE NUMBER")
-        _state.value.isUniversityNameFormatValid.value = validateInput(university, "UNIVERSITY NAME")
+        _state.value.isUniversityNameFormatValid.value =
+            validateInput(university, "UNIVERSITY NAME")
 
         if (_state.value.isNameFormatValid.value && _state.value.isPhoneNumberFormatValid.value && _state.value.isUniversityNameFormatValid.value) {
             _state.value.name.value = name

@@ -1,6 +1,5 @@
 package com.apero.minhnt1.database.user
 
-import android.graphics.Bitmap
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
@@ -10,7 +9,7 @@ import com.apero.minhnt1.database.playlist.Playlist
 
 @Entity
 data class User(
-    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "user_id")val userID: Int = 0,
+    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "user_id") val userID: Int = 0,
     @ColumnInfo(name = "username") var username: String = "",
     @ColumnInfo(name = "password") var password: String = "",
     @ColumnInfo(name = "email") var email: String = "",

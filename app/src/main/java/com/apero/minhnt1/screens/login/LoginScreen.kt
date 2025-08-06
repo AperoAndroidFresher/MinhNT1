@@ -189,25 +189,25 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Button(onClick = {
-                        runBlocking {
-                            withContext(Dispatchers.IO) {
-                                val retrievedUser =
-                                    userDao.getSpecificUserForLogin(
+                    runBlocking {
+                        withContext(Dispatchers.IO) {
+                            val retrievedUser =
+                                userDao.getSpecificUserForLogin(
+                                    state.username.value,
+                                    state.password.value
+                                )
+                            if (retrievedUser.isNotEmpty()) {
+                                viewModel.processIntent(
+                                    LoginMviIntents.LogIn(
                                         state.username.value,
                                         state.password.value
                                     )
-                                if (retrievedUser.isNotEmpty()) {
-                                    viewModel.processIntent(
-                                        LoginMviIntents.LogIn(
-                                            state.username.value,
-                                            state.password.value
-                                        )
-                                    )
-                                    backStack.add(Home)
-                                    backStack.removeRange(0, backStack.indexOf(Home))
-                                }
+                                )
+                                backStack.add(Home)
+                                backStack.removeRange(0, backStack.indexOf(Home))
                             }
                         }
+                    }
                 }, modifier = Modifier.width(280.dp)) {
                     Text("Log in")
                 }

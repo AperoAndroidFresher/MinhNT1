@@ -34,10 +34,10 @@ import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.apero.minhnt1.screens.HomeScreen
-import com.apero.minhnt1.screens.playlist.PlaylistScreen
+import com.apero.minhnt1.screens.library.LibraryScreen
 import com.apero.minhnt1.screens.login.LoginScreen
 import com.apero.minhnt1.screens.login.LoginViewModel
-import com.apero.minhnt1.screens.library.LibraryScreen
+import com.apero.minhnt1.screens.playlist.PlaylistScreen
 import com.apero.minhnt1.screens.profile.ProfileScreen
 import com.apero.minhnt1.ui.theme.AppTheme
 import kotlinx.coroutines.delay
@@ -55,7 +55,6 @@ class MainActivity : ComponentActivity() {
 
         // Boolean vars to identify if a screen was already launched,
         // to triggering on-launch functions
-        val isHomeAlreadyLaunched = false
         var isLibraryAlreadyLaunched = false
         var isPlaylistAlreadyLaunched = false
 
@@ -129,7 +128,10 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             entry<Playlist> {
-                                PlaylistScreen(applicationContext, isAlreadyLaunched = isPlaylistAlreadyLaunched)
+                                PlaylistScreen(
+                                    applicationContext,
+                                    isAlreadyLaunched = isPlaylistAlreadyLaunched
+                                )
                                 if (!isPlaylistAlreadyLaunched) {
                                     isPlaylistAlreadyLaunched = true
                                 }

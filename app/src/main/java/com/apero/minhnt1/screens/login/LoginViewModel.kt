@@ -21,19 +21,19 @@ class LoginViewModel : ViewModel() {
     private val _intentFlow = MutableSharedFlow<LoginMviIntents>()
 
     fun processIntent(intent: LoginMviIntents) {
-     //   viewModelScope.launch {
-     //       _intentFlow.collect { intent ->
-                when (intent) {
-                    is LoginMviIntents.LogIn -> login(intent.username, intent.password)
-                    is LoginMviIntents.SignUp -> signup(
-                        intent.username,
-                        intent.password,
-                        intent.confirmPassword,
-                        intent.email
-                    )
-                }
-      //      }
-      //  }
+        //   viewModelScope.launch {
+        //       _intentFlow.collect { intent ->
+        when (intent) {
+            is LoginMviIntents.LogIn -> login(intent.username, intent.password)
+            is LoginMviIntents.SignUp -> signup(
+                intent.username,
+                intent.password,
+                intent.confirmPassword,
+                intent.email
+            )
+        }
+        //      }
+        //  }
     }
 
     private fun login(username: String, password: String) {

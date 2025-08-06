@@ -43,7 +43,9 @@ android {
 
 dependencies {
     val room_version = "2.7.2"
-
+    implementation(libs.retrofit)
+    implementation(libs.lottie.compose)
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     ksp("androidx.room:room-compiler:$room_version")
@@ -76,8 +78,8 @@ dependencies {
 //    implementation(libs.coil.network.okhttp)
 //    implementation(libs.coil.kt.coil.compose)
     implementation("io.coil-kt.coil3:coil-compose:3.0.0")
-    implementation (libs.glide.compose)
-    implementation ("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation(libs.glide.compose)
+    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

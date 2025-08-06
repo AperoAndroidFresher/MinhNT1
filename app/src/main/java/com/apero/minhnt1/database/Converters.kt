@@ -1,11 +1,8 @@
 package com.apero.minhnt1.database
 
 import android.net.Uri
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.core.net.toUri
 import androidx.room.TypeConverter
-import com.apero.minhnt1.database.playlist.Playlist
 import com.apero.minhnt1.database.song.Song
 
 class Converters {
