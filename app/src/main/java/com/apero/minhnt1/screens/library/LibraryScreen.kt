@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.icu.text.DecimalFormat
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
@@ -74,18 +75,30 @@ import com.apero.minhnt1.Screen
 import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.database.song.Song
 import com.apero.minhnt1.database.song.SongDao
+import com.apero.minhnt1.network.ApiClient
 import com.apero.minhnt1.utility.convertBitmapToImage
 import com.apero.minhnt1.utility.millisToDuration
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.time.LocalDateTime
 
 object IncomingSong {
-    var Song = Song()
+    var Song = Song(isLocal = 1)
     var showAddToPlaylistPopup = false
 }
 
@@ -103,10 +116,8 @@ fun LibraryScreen(
     val songDao = AppDatabase.getDatabase(context = context).songDao()
     val resolver = context.contentResolver
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var hasAlreadyFetchedSongs by remember { mutableStateOf(false) }
     val mediaPermission = rememberPermissionState(Manifest.permission.READ_MEDIA_AUDIO)
     if (mediaPermission.status.isGranted) {
-        var isLocal by remember { mutableStateOf(true) }
         if (!isAlreadyLaunched) {
             populateMusicLibrary(resolver, songDao)
             state.songLibrary = getMusicLibrary(songDao)
@@ -120,74 +131,9 @@ fun LibraryScreen(
         dropdownItems.add(DropdownItems("Share", R.drawable.share))
 
         Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Black)
-                    .statusBarsPadding(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "My Library",
-                    modifier = Modifier
-                        .weight(0.8f)
-                        .padding(start = 96.dp),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                IconButton(onClick = {
-
-                    viewModel.processIntent(LibraryMviIntents.SwitchView)
-                }, enabled = true) {
-                    Icon(
-                        painter = painterResource(id = if (state.isList.value) R.drawable.grid else R.drawable.hamburger_icon),
-                        contentDescription = "Grid",
-                        modifier = Modifier.weight(0.1f),
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                IconButton(onClick = {
-                }, enabled = true) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.sort_descending),
-                        contentDescription = "Sort",
-                        modifier = Modifier.weight(0.1f),
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Black)
-                    .padding(top = 10.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Button(
-                    onClick = { isLocal = true }, modifier = Modifier.size(120.dp, 40.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isLocal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
-                        contentColor = if (isLocal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
-                    )
-                ) {
-                    Text("Local")
-                }
-                Button(
-                    onClick = { isLocal = false }, modifier = Modifier.size(120.dp, 40.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!isLocal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
-                        contentColor = if (!isLocal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
-                    )
-                ) {
-                    Text("Remote")
-                }
-            }
-
-            if (isLocal) {
+            TopBar(viewModel, state)
+            LocalRemoteButtons(state)
+            if (state.isLocal.value) {
                 if (state.isList.value) {
                     LazyColumn(
                         modifier = Modifier
@@ -210,7 +156,6 @@ fun LibraryScreen(
                             )
                         }
                     }
-
 
                 } else {
                     LazyVerticalGrid(
@@ -238,9 +183,9 @@ fun LibraryScreen(
                     }
                 }
             } else {
-                if (!hasAlreadyFetchedSongs) {
+                if (!state.hasAlreadyFetchedSongs.value) {
                     viewModel.processIntent(LibraryMviIntents.GetMusicFromRemote)
-                    hasAlreadyFetchedSongs = true
+                    state.hasAlreadyFetchedSongs.value = true
                 }
 
                 if (musicFetchState == 2) {
@@ -256,20 +201,21 @@ fun LibraryScreen(
                     }
                 }
                 if (state.remoteSongLibrary.isNotEmpty()) {
-                    // Commented code is for testing purposes only. Due to the rather small size of
-                    // the remote file, the loading screen may not be shown at all
-//                    Executors.newSingleThreadScheduledExecutor().schedule({
-//                        musicFetchState = 1
-//                    }, 5, TimeUnit.SECONDS)
-                    musicFetchState = 1
+                    runBlocking {
+                        //val task = async(Dispatchers.IO) {
+                        downloadAllSongs(state, context)
+                        Log.d("LibraryScreen", "Started at: ${LocalDateTime.now()}")
+                        // }
+                        // task.await()
 
+                    }
+
+                    musicFetchState = 1
                 } else {
-//                    Executors.newSingleThreadScheduledExecutor().schedule({
-//                        musicFetchState = 0
-//                    }, 5, TimeUnit.SECONDS)
                     musicFetchState = 0
                 }
                 if (musicFetchState == 1) {
+                    addRemoteSongsToDatabase(state, context, songDao)
                     if (state.isList.value) {
                         LazyColumn(
                             modifier = Modifier
@@ -318,72 +264,159 @@ fun LibraryScreen(
                         }
                     }
                 } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .navigationBarsPadding()
-                            .background(Black)
-                            .padding(64.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.disconnected),
-                            contentDescription = "Disconnected",
-                            modifier = Modifier.size(80.dp),
-                            tint = Color.White
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            text = "Failed to retrieve songs. Please check your internet connection and try again",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Button(
-                            onClick = {
-                                hasAlreadyFetchedSongs = false
-                                if (!hasAlreadyFetchedSongs) {
-                                    viewModel.processIntent(LibraryMviIntents.GetMusicFromRemote)
-                                    hasAlreadyFetchedSongs = true
-                                }
-                            },
-                            modifier = Modifier.size(160.dp, 50.dp),
-
-                            ) {
-                            Text("Try again")
-                        }
-                    }
+                    NoInternetConnectionScreen(state, viewModel)
                 }
             }
         }
-
-
     } else {
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(8.dp)
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val textToShow = if (mediaPermission.status.shouldShowRationale) {
-                "Loading songs from your local device requires access to your songs. " +
-                        "Please grant the relevant permission to use this feature."
-            } else {
-                "Please grant access to your local storage to use this feature."
-            }
-            Text(textToShow, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(10.dp))
-            Button(onClick = { mediaPermission.launchPermissionRequest() }) {
-                Text("Request permission")
-            }
-        }
+        PermissionNotGrantedScreen(mediaPermission)
     }
 
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun PermissionNotGrantedScreen(mediaPermission: PermissionState) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(8.dp)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val textToShow = if (mediaPermission.status.shouldShowRationale) {
+            "Loading songs from your local device requires access to your songs. " +
+                    "Please grant the relevant permission to use this feature."
+        } else {
+            "Please grant access to your local storage to use this feature."
+        }
+        Text(textToShow, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(10.dp))
+        Button(onClick = { mediaPermission.launchPermissionRequest() }) {
+            Text("Request permission")
+        }
+    }
+}
+
+@Composable
+fun NoInternetConnectionScreen(state: LibraryMviState, viewModel: LibraryViewModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .background(Black)
+            .padding(64.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.disconnected),
+            contentDescription = "Disconnected",
+            modifier = Modifier.size(80.dp),
+            tint = Color.White
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Failed to retrieve songs. Please check your internet connection and try again",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(10.dp))
+        Button(
+            onClick = {
+                state.hasAlreadyFetchedSongs.value = false
+                if (!state.hasAlreadyFetchedSongs.value) {
+                    viewModel.processIntent(LibraryMviIntents.GetMusicFromRemote)
+                    state.hasAlreadyFetchedSongs.value = true
+                }
+            },
+            modifier = Modifier.size(160.dp, 50.dp),
+
+            ) {
+            Text("Try again")
+        }
+    }
+}
+
+@Composable
+fun LocalRemoteButtons(state: LibraryMviState) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Black)
+            .padding(top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Button(
+            onClick = { state.isLocal.value = true }, modifier = Modifier.size(120.dp, 40.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (state.isLocal.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
+                contentColor = if (state.isLocal.value) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
+            )
+        ) {
+            Text("Local")
+        }
+        Button(
+            onClick = {
+                state.isLocal.value = false
+            }, modifier = Modifier.size(120.dp, 40.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (!state.isLocal.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
+                contentColor = if (!state.isLocal.value) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground
+            )
+        ) {
+            Text("Remote")
+        }
+    }
+}
+
+@Composable
+fun TopBar(
+    viewModel: LibraryViewModel,
+    state: LibraryMviState
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Black)
+            .statusBarsPadding(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "My Library",
+            modifier = Modifier
+                .weight(0.8f)
+                .padding(start = 96.dp),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        IconButton(onClick = {
+
+            viewModel.processIntent(LibraryMviIntents.SwitchView)
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = if (state.isList.value) R.drawable.grid else R.drawable.hamburger_icon),
+                contentDescription = "Grid",
+                modifier = Modifier.weight(0.1f),
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        IconButton(onClick = {
+        }, enabled = true) {
+            Icon(
+                painter = painterResource(id = R.drawable.sort_descending),
+                contentDescription = "Sort",
+                modifier = Modifier.weight(0.1f),
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
+    }
 }
 
 @Composable
@@ -732,7 +765,8 @@ private fun populateMusicLibrary(
                         duration = duration,
                         path = path,
                         cover = contentUri,
-                        songID = id.toInt()
+                        songID = id.toInt(),
+                        isLocal = 1
                     )
                     runBlocking {
                         withContext(Dispatchers.IO) {
@@ -778,8 +812,130 @@ private fun getMusicLibrary(songDao: SongDao): SnapshotStateList<Song> {
     return stateLibrary
 }
 
+private fun downloadSong(context: Context, fileName: String) {
+    runBlocking {
+        withContext(Dispatchers.IO) {
+            val call = ApiClient.build().getSong(fileName)
+            call.enqueue(object : Callback<ResponseBody> {
+                @RequiresApi(Build.VERSION_CODES.O)
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
+                    when {
+                        response.isSuccessful -> {
+                            response.body()?.let { body ->
+                                saveFileToInternalStorage(context, fileName, body)
+                            }
+                        }
+
+                        response.code() == 400 -> Log.e("LibraryViewModel", "Bad Request")
+                        response.code() == 401 -> Log.e("LibraryViewModel", "Unauthorized")
+                        response.code() == 403 -> Log.e("LibraryViewModel", "Forbidden")
+                        response.code() == 404 -> Log.e("LibraryViewModel", "Not Found")
+                        response.code() == 500 -> Log.e("LibraryViewModel", "Internal Server Error")
+                        else -> Log.e("LibraryViewModel", "Unknown Error")
+                    }
+                }
+
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    Log.e("LibraryViewModel", "onFailure: ${t.message}")
+
+                }
+            })
+        }
+    }
+}
 
 
+@RequiresApi(Build.VERSION_CODES.O)
+private fun saveFileToInternalStorage(context: Context, fileName: String, content: ResponseBody) {
+    val directory = File(context.filesDir, "RemoteLibrary")
+    if (!directory.exists()) {
+        directory.mkdir()
+    }
+    val file = File(directory, fileName)
+    if (!file.exists()) {
+        var inputStream: InputStream? = null
+        var outputStream: OutputStream? = null
+        try {
+            val fileReader = ByteArray(4096)
+            val fileSize = content.contentLength()
+            var fileSizeDownloaded: Long = 0
+
+            inputStream = content.byteStream()
+            outputStream = FileOutputStream(file)
+
+            val fileSizeFormat = DecimalFormat("#0.00")
+            Log.d(
+                "LibraryScreen",
+                "$fileName file size: ${fileSizeFormat.format(fileSize.toDouble() / 1_048_576)}MB"
+            )
+            while (true) {
+                val read = inputStream.read(fileReader)
+                if (read == -1) {
+                    break
+                }
+                outputStream.write(fileReader, 0, read)
+                fileSizeDownloaded += read.toLong()
+
+            }
+
+            outputStream.flush()
+            Log.d("LibraryScreen", "Finished downloading $fileName at ${LocalDateTime.now()}")
+        } catch (e: IOException) {
+            Log.e("LibraryScreen", e.message.toString())
+        } finally {
+            inputStream?.close()
+            outputStream?.close()
+        }
+    }
+
+}
 
 
+private fun getInternalStorageFilePath(context: Context, fileName: String): String {
+    val directory = File(context.filesDir, "RemoteLibrary")
+    val file = File(directory, fileName)
+    return if (file.exists()) {
+        file.path
+    } else "not_found"
+}
+
+private fun addRemoteSongsToDatabase(
+    state: LibraryMviState,
+    context: Context,
+    songDao: SongDao
+) {
+    for (i in 0..state.remoteSongLibrary.size - 1) {
+        state.remoteSongLibrary[i].path = getInternalStorageFilePath(
+            context,
+            state.remoteSongLibrary[0].path.substringAfterLast('/')
+        )
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                if (songDao.getSong(state.remoteSongLibrary[i].title).isEmpty()) {
+                    songDao.insert(state.remoteSongLibrary[i])
+                } else {
+                    songDao.updateSongPath(
+                        state.remoteSongLibrary[i].title,
+                        state.remoteSongLibrary[i].path
+                    )
+                }
+            }
+        }
+    }
+}
+
+private suspend fun downloadAllSongs(
+    state: LibraryMviState,
+    context: Context
+) {
+    for (i in 0..state.remoteSongLibrary.size - 1) {
+        downloadSong(
+            context,
+            state.remoteSongLibrary[i].path.substringAfterLast('/')
+        )
+    }
+}
 

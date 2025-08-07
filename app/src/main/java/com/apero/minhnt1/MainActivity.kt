@@ -20,14 +20,15 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.entry
@@ -57,7 +58,21 @@ class MainActivity : ComponentActivity() {
         // to triggering on-launch functions
         var isLibraryAlreadyLaunched = false
         var isPlaylistAlreadyLaunched = false
-
+        val sharedPref = getPreferences(MODE_PRIVATE)
+        if (!sharedPref.contains("isLoggedIn"))
+            sharedPref.edit {
+                putBoolean(
+                    "isLoggedIn",
+                    false
+                )
+            }
+        if (!sharedPref.contains("isRememberMeChecked"))
+            sharedPref.edit {
+                putBoolean(
+                    "isRememberMeChecked",
+                    false
+                )
+            }
         var keepSplashScreen = true
         super.onCreate(savedInstanceState)
         splashscreen.setKeepOnScreenCondition { keepSplashScreen }
@@ -67,11 +82,18 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent {
-            val backStack = remember { mutableStateListOf<Screen>(Login) }
+            var shouldShowNavBar = remember { mutableStateOf(false) }
+            val backStack = remember {
+                mutableStateListOf<Screen>(
+                    if (sharedPref.getBoolean("isLoggedIn", true)
+                        && sharedPref.getBoolean("isRememberMeChecked", true)
+                    ) Home else Login
+                )
+            }
             AppTheme {
                 Scaffold(
                     bottomBar = {
-                        if (viewModel.state.collectAsState().value.loginSuccess.value) {
+                        if (shouldShowNavBar.value) {
                             NavigationBar {
                                 var currSelection: Screen = Home
                                 destinations.forEach { destination ->
@@ -111,7 +133,19 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             entry<Home> {
+                                sharedPref.edit {
+                                    putBoolean(
+                                        "isLoggedIn",
+                                        true
+                                    ).putBoolean(
+                                        "isRememberMeChecked",
+                                        viewModel.state.value
+                                            .isRememberMeChecked.value
+                                    ).apply()
+                                }
+                                shouldShowNavBar.value = true
                                 HomeScreen(backStack)
+
                             }
                             entry<Information> {
                                 ProfileScreen(context = applicationContext)
@@ -138,6 +172,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+//                    if (sharedPref.getBoolean("isLoggedIn", true)
+//                        && sharedPref.getBoolean("isRememberMeChecked", true)
+//                    ) {
+//                        backStack.add(Home)
+//                    }
+
                 }
             }
         }

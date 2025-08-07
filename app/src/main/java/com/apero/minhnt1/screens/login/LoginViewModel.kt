@@ -24,7 +24,12 @@ class LoginViewModel : ViewModel() {
         //   viewModelScope.launch {
         //       _intentFlow.collect { intent ->
         when (intent) {
-            is LoginMviIntents.LogIn -> login(intent.username, intent.password)
+            is LoginMviIntents.LogIn -> login(
+                intent.username,
+                intent.password,
+                intent.isRememberMeChecked
+            )
+
             is LoginMviIntents.SignUp -> signup(
                 intent.username,
                 intent.password,
@@ -36,7 +41,7 @@ class LoginViewModel : ViewModel() {
         //  }
     }
 
-    private fun login(username: String, password: String) {
+    private fun login(username: String, password: String, isRememberMeChecked: Boolean) {
         val usernameFormatCheck = validateInput(username, "USERNAME")
         val passwordFormatCheck = validateInput(password, "PASSWORD")
         if (usernameFormatCheck && passwordFormatCheck) {
@@ -45,6 +50,7 @@ class LoginViewModel : ViewModel() {
             if (foundUser.isNotEmpty()) {
                 _state.value.users.add(foundUser[0])
                 _state.value.loginSuccess.value = true
+                _state.value.isRememberMeChecked.value = isRememberMeChecked
                 Username.value = foundUser[0].username
             }
         }

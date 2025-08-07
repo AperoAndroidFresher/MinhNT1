@@ -16,4 +16,13 @@ interface SongDao {
 
     @Delete
     suspend fun delete(song: Song)
+
+    @Query("SELECT * FROM song WHERE title = :title")
+    suspend fun getSong(title: String): List<Song>
+
+    @Query("update song set path = :path where title = :title")
+    suspend fun updateSongPath(title: String, path: String)
+
+    @Query("SELECT * FROM song WHERE isLocal = 0")
+    suspend fun getAllRemoteSongs(): MutableList<Song>
 }

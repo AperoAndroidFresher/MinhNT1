@@ -19,21 +19,22 @@ class Converters {
 
     @TypeConverter
     fun fromSong(value: Song?): String? {
-        return value?.let { "${it.cover},${it.title},${it.artist},${it.duration},${it.path},${it.songID},${it.inPlaylistID}" }
+        return value?.let { "${it.cover},${it.title},${it.artist},${it.duration},${it.path},${it.songID},${it.inPlaylistID},${it.isLocal}" }
     }
 
     @TypeConverter
     fun toSong(value: String?): Song? {
         return value?.split(",")?.let { parts ->
-            if (parts.size == 7) {
+            if (parts.size == 8) {
                 Song(
                     parts[0].substringAfterLast('=').toUri(),
-                    parts[1].substringAfterLast('=').trim(),
-                    parts[2].substringAfterLast('=').trim(),
-                    parts[3].substringAfterLast('=').trim().toLong(),
-                    parts[4].substringAfterLast('=').trim(),
-                    parts[5].substringAfterLast('=').trim().toInt(),
-                    parts[6].substringAfterLast('=').substringBeforeLast(')').toInt()
+                    parts[1].substringAfterLast('='),
+                    parts[2].substringAfterLast('='),
+                    parts[3].substringAfterLast('=').toLong(),
+                    parts[4].substringAfterLast('='),
+                    parts[5].substringAfterLast('=').toInt(),
+                    parts[6].substringAfterLast('=').toInt(),
+                    parts[7].substringAfterLast('=').substringBeforeLast(')').toInt()
                 )
             } else null
         }

@@ -15,7 +15,10 @@ data class Song(
     @ColumnInfo(name = "title") val title: String = "Sample",
     @ColumnInfo(name = "artist") val artist: String = "Sample",
     @ColumnInfo(name = "duration") val duration: Long = 0,
-    @ColumnInfo(name = "path", typeAffinity = 2) val path: String = "",
-    @PrimaryKey val songID: Int = 0,
-    @ColumnInfo(name = "inPlaylistID") var inPlaylistID: Int = 0
+    @ColumnInfo(name = "path", typeAffinity = 2) var path: String = "",
+    @PrimaryKey(autoGenerate = true) val songID: Int = 0,
+    @ColumnInfo(name = "inPlaylistID") var inPlaylistID: Int = 0,
+    // 0 = false, 1 = true. Using Int to better fit into database
+    @ColumnInfo(name = "isLocal") var isLocal: Int
 )
+
