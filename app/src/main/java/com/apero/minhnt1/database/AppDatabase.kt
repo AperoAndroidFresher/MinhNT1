@@ -16,7 +16,7 @@ import com.apero.minhnt1.database.user.UserDao
 
 @Database(
     entities = [User::class, Song::class, Playlist::class, PlaylistSongCrossRef::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

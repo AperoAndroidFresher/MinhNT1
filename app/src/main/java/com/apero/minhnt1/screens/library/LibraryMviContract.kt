@@ -12,7 +12,9 @@ data class LibraryMviState(
     var remoteSongLibrary: SnapshotStateList<Song> = mutableStateListOf(),
     var remoteSongFetchState: MutableState<Int> = mutableStateOf(2),
     var isList: MutableState<Boolean> = mutableStateOf(false),
-    var retriever: MutableState<MediaMetadataRetriever> = mutableStateOf(MediaMetadataRetriever())
+    var retriever: MutableState<MediaMetadataRetriever> = mutableStateOf(MediaMetadataRetriever()),
+    var isLocal: MutableState<Boolean> = mutableStateOf(true),
+    var hasAlreadyFetchedSongs: MutableState<Boolean> = mutableStateOf(false)
 )
 
 sealed interface LibraryMviIntents {

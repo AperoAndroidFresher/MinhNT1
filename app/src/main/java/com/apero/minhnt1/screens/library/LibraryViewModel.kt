@@ -2,14 +2,17 @@ package com.apero.minhnt1.screens.library
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.apero.minhnt1.database.song.Song
 import com.apero.minhnt1.network.ApiClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -37,40 +40,42 @@ class LibraryViewModel : ViewModel() {
     }
 
     fun getMusicFromRemote() {
-        val call = ApiClient.build().getSongs()
-        call.enqueue(object : Callback<List<Song>> {
-            override fun onResponse(call: Call<List<Song>>, response: Response<List<Song>>) {
-                when {
-                    response.isSuccessful -> {
-                        var jsonList = response.body()
-                        jsonList?.forEach {
-                            //if (!state.value.remoteSongLibrary.contains(it))
-                            state.value.remoteSongLibrary.add(
-                                Song(
-                                    title = it.title,
-                                    artist = it.artist,
-                                    duration = it.duration.toLong(),
-                                    path = it.path
+        viewModelScope.launch(Dispatchers.IO) {
+            val call = ApiClient.build().getListOfSongs()
+            call.enqueue(object : Callback<List<Song>> {
+                override fun onResponse(call: Call<List<Song>>, response: Response<List<Song>>) {
+                    when {
+                        response.isSuccessful -> {
+                            var jsonList = response.body()
+                            jsonList?.forEach {
+                                _state.value.remoteSongLibrary.add(
+                                    Song(
+                                        title = it.title,
+                                        artist = it.artist,
+                                        duration = it.duration.toLong(),
+                                        path = it.path,
+                                        isLocal = 0
+                                    )
                                 )
-                            )
-                            Log.d("Retrofit response", it.title)
+                                Log.d("Retrofit response", it.title)
+                            }
                         }
+
+                        response.code() == 400 -> Log.e("LibraryViewModel", "Bad Request")
+                        response.code() == 401 -> Log.e("LibraryViewModel", "Unauthorized")
+                        response.code() == 403 -> Log.e("LibraryViewModel", "Forbidden")
+                        response.code() == 404 -> Log.e("LibraryViewModel", "Not Found")
+                        response.code() == 500 -> Log.e("LibraryViewModel", "Internal Server Error")
+                        else -> Log.e("LibraryViewModel", "Unknown Error")
                     }
-
-                    response.code() == 400 -> Log.e("LibraryViewModel", "Bad Request")
-                    response.code() == 401 -> Log.e("LibraryViewModel", "Unauthorized")
-                    response.code() == 403 -> Log.e("LibraryViewModel", "Forbidden")
-                    response.code() == 404 -> Log.e("LibraryViewModel", "Not Found")
-                    response.code() == 500 -> Log.e("LibraryViewModel", "Internal Server Error")
-                    else -> Log.e("LibraryViewModel", "Unknown Error")
                 }
-            }
 
-            override fun onFailure(call: Call<List<Song>>, t: Throwable) {
-                Log.e("LibraryViewModel", "onFailure: ${t.message}")
+                override fun onFailure(call: Call<List<Song>>, t: Throwable) {
+                    Log.e("LibraryViewModel", "onFailure: ${t.message}")
 
-            }
-        })
+                }
+            })
+        }
 
     }
 
