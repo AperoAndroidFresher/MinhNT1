@@ -25,6 +25,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -178,13 +180,18 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
             if (!state.isSignupScreen.value) {
+                var isRememberMeChecked = remember { mutableStateOf(true) }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 48.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RememberCheckbox("Remember me", {}, false)
+                    RememberCheckbox(
+                        "Remember me",
+                        { isRememberMeChecked.value = !isRememberMeChecked.value },
+                        isRememberMeChecked.value
+                    )
                 }
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -200,7 +207,8 @@ fun LoginScreen(
                                 viewModel.processIntent(
                                     LoginMviIntents.LogIn(
                                         state.username.value,
-                                        state.password.value
+                                        state.password.value,
+                                        isRememberMeChecked.value
                                     )
                                 )
                                 backStack.add(Home)
