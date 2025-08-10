@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.lifecycle.service)
     val room_version = "2.7.2"
     implementation(libs.retrofit)
     implementation(libs.lottie.compose)

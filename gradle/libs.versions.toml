@@ -20,6 +20,7 @@ materialIconsExtended = "1.7.8"
 navigationFragmentKtx = "2.6.0"
 navigationUiKtx = "2.6.0"
 navigation3UiAndroid = "1.0.0-alpha05"
+lifecycleService = "2.9.2"
 
 
 [libraries]
@@ -53,6 +54,7 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version = "3.0
 converter = { group = "com.squareup.retrofit2", name = "converter-gson"}
 gson = { group = "com.google.code.gson", name = "gson", version = "2.13.1"}
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version = "6.6.6"}
+androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleService" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
