@@ -12,6 +12,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
@@ -69,12 +71,15 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.apero.minhnt1.DropdownItems
+import com.apero.minhnt1.MediaManager
+import com.apero.minhnt1.MediaPlaybackService
 import com.apero.minhnt1.Playlist
 import com.apero.minhnt1.R
 import com.apero.minhnt1.Screen
 import com.apero.minhnt1.database.AppDatabase
 import com.apero.minhnt1.database.song.Song
 import com.apero.minhnt1.database.song.SongDao
+import com.apero.minhnt1.getCurrentSong
 import com.apero.minhnt1.network.ApiClient
 import com.apero.minhnt1.utility.convertBitmapToImage
 import com.apero.minhnt1.utility.millisToDuration
@@ -110,7 +115,8 @@ fun LibraryScreen(
     context: Context,
     viewModel: LibraryViewModel = viewModel(),
     backStack: SnapshotStateList<Screen>,
-    isAlreadyLaunched: Boolean
+    isAlreadyLaunched: Boolean,
+    playbackService: MediaPlaybackService?
 ) {
     var musicFetchState by remember { mutableIntStateOf(2) }
     val songDao = AppDatabase.getDatabase(context = context).songDao()
@@ -122,7 +128,7 @@ fun LibraryScreen(
             populateMusicLibrary(resolver, songDao)
             state.songLibrary = getMusicLibrary(songDao)
         }
-
+        MediaManager.libraryState = state
         val lazyListState = rememberLazyListState()
         val lazyGridState = rememberLazyGridState()
         val dropdownItems = remember { mutableStateListOf<DropdownItems>() }
@@ -177,7 +183,8 @@ fun LibraryScreen(
                                 index = index,
                                 item = item,
                                 isLocal = true,
-                                dropdownItems = dropdownItems
+                                dropdownItems = dropdownItems,
+                                playbackService = playbackService!!
                             )
                         }
                     }
@@ -258,7 +265,8 @@ fun LibraryScreen(
                                     index = index,
                                     item = item,
                                     isLocal = false,
-                                    dropdownItems = dropdownItems
+                                    dropdownItems = dropdownItems,
+                                    playbackService = playbackService!!
                                 )
                             }
                         }
@@ -626,7 +634,8 @@ fun SongEntryVertical(
     backStack: SnapshotStateList<Screen>,
     songDao: SongDao,
     item: Song,
-    isLocal: Boolean
+    isLocal: Boolean,
+    playbackService: MediaPlaybackService
 ) {
     val cover = if (isLocal) remember(state.songLibrary[index].songID) {
         convertBitmapToImage(state.songLibrary[index].cover, context)
@@ -642,7 +651,11 @@ fun SongEntryVertical(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(10.dp)
+        modifier = Modifier
+            .padding(10.dp)
+            .clickable {
+                playbackService.startMusic(getCurrentSong().path.toUri(), context)
+            }
     ) {
         Box(
             modifier = Modifier
